@@ -1,0 +1,32 @@
+build/
+.gradle/
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.env
+
+# Gradle
+.gradle
+**/build/
+!src/**/build/
+
+# IntelliJ
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+
+# Eclipse
+.classpath
+.project
+.settings
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
