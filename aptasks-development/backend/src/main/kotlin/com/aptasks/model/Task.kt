@@ -12,5 +12,6 @@ data class Task(
     @Column(name="in_time")
     var inTime: Boolean = true,
     @Column(name = "user_id")
-    var userId: String = ""
+    var userId: String = "",
+    var isCompleted: Boolean = false
 )
