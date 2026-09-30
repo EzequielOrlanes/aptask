@@ -15,21 +15,6 @@ import java.util.UUID
 class TaskController(
     private val taskService: TaskService
 ) {
-    // 1. Carrega todos os dados da Home unificados
-    @GetMapping("/dashboard")
-    fun getDashboardData(): ResponseEntity<DashboardResponse> {
-        val data = taskService.getDashboardData()
-        return ResponseEntity.ok(data)
-    }
-
-    // 2. Rota para o usuário marcar/desmarcar como feito (Toggle)
-    @PatchMapping("/{id}/toggle")
-    fun toggleTaskStatus(@PathVariable id: UUID): ResponseEntity<ApiResponse<String>> { // Adicionado <String>
-        taskService.toggleStatus(id)
-        // Adicionado <String> também na instância do ApiResponse
-        return ResponseEntity.ok(ApiResponse<String>(true, "Status da tarefa atualizado com sucesso"))
-    }
-
     @PostMapping("/create")
     fun create_task(@RequestBody createtaskRequest: CreateTaskRequest): ResponseEntity<Map<String, Any>> {
         return try {
@@ -59,4 +44,11 @@ class TaskController(
                 )
         }
     }
+    //Rota para o usuário marcar/desmarcar como feito (Toggle)
+    @PatchMapping("/{id}/toggle")
+    fun toggleTaskStatus(@PathVariable id: UUID): ResponseEntity<ApiResponse<String>> {
+        taskService.toggleStatus(id)
+        return ResponseEntity.ok(ApiResponse<String>(true, "Status da tarefa atualizado com sucesso"))
+    }
+
 }

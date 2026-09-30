@@ -9,7 +9,6 @@ import java.util.UUID
 
 @Service
 class FineService(private val fineRepository: FineRepository) {
-
     @Transactional
     fun applyFine(dto: FineRequest) {
         // Mapeando o DTO para o formato exato que o seu Model Fine espera
@@ -20,7 +19,6 @@ class FineService(private val fineRepository: FineRepository) {
             receiver = UUID.fromString(dto.receiver),         // Converte String para UUID
             isPaid = false                                    // Valor padrão inicial
         )
-
         fineRepository.save(fine)
     }
 }

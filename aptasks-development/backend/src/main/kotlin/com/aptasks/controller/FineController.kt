@@ -14,6 +14,6 @@ class FineController(private val fineService: FineService) {
     @PostMapping
     fun createFine(@RequestBody dto: FineRequest): ResponseEntity<ApiResponse<String>> {
         fineService.applyFine(dto)
-        return ResponseEntity.ok(ApiResponse<String>(true, "Multa aplicada com sucesso! O bolso agradece."))
+        return ResponseEntity.ok(ApiResponse<String>(true, "Multa aplicada com sucesso! O bolso agradece e a casa também."))
     }
 }

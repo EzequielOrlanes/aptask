@@ -44,7 +44,10 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
     
     // Testing
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-test") {
+        exclude(group = "org.mockito", module = "mockito-core") // Opcional: remove o Mockito para evitar conflitos
+    }
+    testImplementation("io.mockk:mockk:1.13.10")
 }
 
 tasks.withType<KotlinCompile> {
@@ -57,6 +60,7 @@ tasks.withType<KotlinCompile> {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
 
 tasks.withType<org.springframework.boot.gradle.tasks.run.BootRun> {
     val envFile = file(".env")

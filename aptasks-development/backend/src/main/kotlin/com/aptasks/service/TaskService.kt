@@ -23,19 +23,26 @@ class TaskService(
         return taskRepository.save(newTask)
     }
 
+//    fun isTasksLate(id: UUID): Boolean{
+//        // quero que avlie se uma tarefa já passou do tempo de ser feita e se sim gera uma multa usando o fineService.
+//        //applyFine()
+//
+//
+//    }
+
 
     fun getDashboardData(): DashboardResponse {
         val allTasks = taskRepository.findAll()
         val total = allTasks.size
-        val completed = allTasks.count { it.isCompleted }
-        val pending = total - completed
+        var completed = allTasks.count { it.isCompleted }
+        var pending = total - completed
         val recent = allTasks.take(5)
 
         return DashboardResponse(total, completed, pending, recent)
     }
 
     fun toggleStatus(id: UUID) { // Mantido como Long para alinhar com o Repository
-        val task = taskRepository.findById(id).orElseThrow {
+        var task = taskRepository.findById(id).orElseThrow {
             IllegalArgumentException("Tarefa não encontrada com o ID: $id")
         }
         task.isCompleted = !task.isCompleted
