@@ -1,5 +1,22 @@
 import api from './axiosInstance';
 
+// Contratos esperados pela interface (a regra de negócio e os cálculos ficam no backend):
+// GET /tasks/weekly -> [{ id, userName, description, weekStart, deadline, status, fineApplied, fineAmount }]
+// PATCH /tasks/weekly/{userName}/decision -> { done: boolean }, retorna a tarefa atualizada.
+// GET /residents -> [{ id, name, avatarUrl, isAtHome }]
+// PATCH /residents/{id}/presence -> { isAtHome: boolean }, retorna o morador atualizado.
+// GET /trash/today -> { date, responsible: Resident|null, eligibleResidents: Resident[] }
+// Aceita respostas diretas ou no envelope comum { data: ... }.
+const unwrap = response => response.data?.data ?? response.data;
+
+export const getWeeklyTasks = async () => unwrap(await api.get('/tasks/weekly'));
+export const getResidents = async () => unwrap(await api.get('/residents'));
+export const updateResidentPresence = async (residentId, isAtHome) =>
+  unwrap(await api.patch(`/residents/${encodeURIComponent(residentId)}/presence`, { isAtHome }));
+export const getTrashStatus = async () => unwrap(await api.get('/trash/today'));
+export const submitWeeklyDecision = async (userName, done) =>
+  unwrap(await api.patch(`/tasks/weekly/${encodeURIComponent(userName)}/decision`, { done }));
+
 const API_URL = 'https://apptasks-e6oh.onrender.com/'; 
 
 export const setStatusTasks = async (Name, Status) => {

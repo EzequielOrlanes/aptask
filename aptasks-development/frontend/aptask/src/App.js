@@ -1,76 +1,64 @@
 import './App.css';
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Task from "./pages/Task.js";
-import Home from "./pages/Home.js"
-import Login from './pages/Login.js';
+import Home from "./pages/Home.js";
+import Login from "./pages/Login.js";
+import { getWeeklyTasks, getResidents, getTrashStatus, updateResidentPresence, submitWeeklyDecision } from "./services/api";
 
 function App() {
   const [loggedUser, setLoggedUser] = useState("");
+  const [weeklyTasks, setWeeklyTasks] = useState([]);
+  const [residents, setResidents] = useState([]);
+  const [trashStatus, setTrashStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const rotation = [
-    { name: "Gabriela", tasks: [3 , 2, 1, 0] },
-    { name: "Isabella", tasks: [1, 0, 3, 2] }, 
-    { name: "Ezequiel", tasks: [2,3,0,1] },
-    { name: "Guilherme", tasks: [0, 1,2,3] }];
+  const refreshTasks = useCallback(async () => {
+    setLoading(true);
+    try {
+      const results = await Promise.allSettled([getWeeklyTasks(), getResidents(), getTrashStatus()]);
+      const [tasksResult, residentsResult, trashResult] = results;
+      if (tasksResult.status === "fulfilled") setWeeklyTasks(tasksResult.value);
+      if (residentsResult.status === "fulfilled") setResidents(residentsResult.value);
+      if (trashResult.status === "fulfilled") setTrashStatus(trashResult.value);
+      const failed = results.some(result => result.status === "rejected");
+      setError(failed ? "Algumas informações não carregaram. Confira a conexão com o backend." : "");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const [tasks, setTasks] = useState([
-    { task: "Sala, sofá, corredor, mesa, varanda", status: false, data_and_time: "" },
-    { task: "Banheiro social", status: false, data_and_time: ""},
-    { task: "Pia, geladeira, fogão, microondas, armários cozinha, panos de prato", status: false, data_and_time: ""},
-    { task: "Chão cozinha, tanque + armário tanque, lixo, Banheiro quartinho + quartinho", status: false, data_and_time: ""},
-  ]);
+  useEffect(() => { refreshTasks(); }, [refreshTasks]);
 
-  const getCurrentWeek = () => {
-    const startDate = new Date("2024-12-25"); 
-    const currentDate = new Date();
-    const weekNumber = Math.floor((currentDate - startDate) / (7 * 24 * 60 * 60 * 1000)) % 4; // Semanas rotativas
-    return weekNumber;
+  const currentTasks = weeklyTasks.map(item => ({
+    ...item,
+    task: item.description,
+    status: item.status === "done",
+    data_and_time: item.status === "done" ? "Concluída nesta semana" : "",
+  }));
+  const task = weeklyTasks.find(item => item.userName === loggedUser);
+  const submitDecision = async done => {
+    const updated = await submitWeeklyDecision(loggedUser, done);
+    setWeeklyTasks(items => items.map(item => item.id === updated.id ? updated : item));
+  };
+  const changePresence = async isAtHome => {
+    const resident = residents.find(item => item.name === loggedUser);
+    if (!resident?.id) throw new Error("O morador não possui um identificador da API.");
+    await updateResidentPresence(resident.id, isAtHome);
+    await refreshTasks();
   };
 
-  const currentWeek = getCurrentWeek();
   return (
     <Router>
-    <Routes>
-    <Route
-      path="/login"
-      element= {
-        <Login/>
-      }
-      
-    >
-    </Route>
-
-      <Route
-      path="/"
-      element={
-      // <Login/>
-      <Home loggedUser={loggedUser} setLoggedUser={setLoggedUser} tasks={tasks} rotation={rotation}/>
-      }> 
-      </Route>
-      <Route
-        path="/user"
-        element={
-          loggedUser ? (
-            <Task
-              loggedUser={loggedUser}
-              rotation={rotation}
-              tasks={tasks}
-              setTasks={setTasks}
-              currentWeek={currentWeek}
-            />
-          ) : (
-            <Navigate to="/"/>
-           )
-        }
-      />
-      <Route path="/home"
-      element={
-      <Home loggedUser={loggedUser} setLoggedUser={setLoggedUser} tasks={tasks} rotation={rotation}/>
-      }>
-      </Route>
-    </Routes>
-  </Router>
+      {error && <div className="app-alert" role="alert">{error}<button onClick={refreshTasks}>Tentar novamente</button></div>}
+      <Routes>
+        <Route path="/" element={<Home loggedUser={loggedUser} setLoggedUser={setLoggedUser} tasks={currentTasks} residents={residents} trashStatus={trashStatus} loading={loading} />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/user" element={loggedUser ? <Task loggedUser={loggedUser} resident={residents.find(item => item.name === loggedUser)} task={task} loading={loading} onDecision={submitDecision} onPresenceChange={changePresence} /> : <Navigate to="/" />} />
+        <Route path="/home" element={<Home loggedUser={loggedUser} setLoggedUser={setLoggedUser} tasks={currentTasks} residents={residents} trashStatus={trashStatus} loading={loading} />} />
+      </Routes>
+    </Router>
   );
 }
 
