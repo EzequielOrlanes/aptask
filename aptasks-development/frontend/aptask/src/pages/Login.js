@@ -7,7 +7,7 @@ import '../style/Login.css';
 
 import { loginUser, registerUser } from '../services/api';
 
-const Login = () => {
+const Login = ({ onAuthenticated }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -18,7 +18,7 @@ const Login = () => {
         setError('');
         try {
             const response = await loginUser(email, password);
-            console.log('Usuário logado:', response.user);
+            onAuthenticated?.(response);
             navigate('/home');
         } catch (error) {
             setError(error.message || 'Erro ao fazer login');
@@ -30,7 +30,7 @@ const Login = () => {
         setError('');
         try {
             const response = await registerUser(email, password);
-            console.log('Usuário registrado:', response.user);
+            onAuthenticated?.(response);
             navigate('/home');
         } catch (error) {
             setError(error.message || 'Erro ao criar conta');

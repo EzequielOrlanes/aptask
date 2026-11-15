@@ -1,21 +1,37 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Img from "../imagem/ap103.png";
 import ResidentAvatar from "../components/ResidentAvatar";
+import AdminTaskPanel from "../components/AdminTaskPanel";
 import "../style/Home.css";
 
-function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStatus, loading }) {
+function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStatus, loading, isAdmin, onSaveTask, onDeleteTask, onAdminLogout, onAssignTrash, onReportTrashFull, onReportTrashEmptied }) {
   const displayedResidents = residents.length ? residents : residentsFallback;
-  const eligibleResidents = trashStatus?.eligibleResidents || [];
   const responsible = trashStatus?.responsible;
+  const [selectedResponsibleId, setSelectedResponsibleId] = useState("");
+  const [trashAction, setTrashAction] = useState("");
+  const [trashActionError, setTrashActionError] = useState("");
+
+  useEffect(() => {
+    setSelectedResponsibleId(responsible?.id || "");
+  }, [responsible?.id]);
+
+  const runTrashAction = async (action, kind) => {
+    setTrashAction(kind);
+    setTrashActionError("");
+    try { await action(); }
+    catch { setTrashActionError("Não foi possível atualizar a informação do lixo. Tente novamente."); }
+    finally { setTrashAction(""); }
+  };
 
   return (
     <main className="home-page">
       <header className="home-header">
         <Link className="brand-lockup" to="/home" aria-label="AP103 início">
-          <img src={Img} alt="AP103" />
+          <span className="brand-mark"><img src={Img} alt="" /></span>
           <span>CASA EM HARMONIA</span>
         </Link>
-        <span className="header-indicator"><i /> Rotina compartilhada</span>
+        {isAdmin ? <button type="button" className="header-indicator admin-session-button" onClick={onAdminLogout}><i /> Administrador · Sair</button> : <Link className="header-indicator admin-access-link" to="/login">Acesso administrativo <span aria-hidden="true">↗</span></Link>}
       </header>
 
       <section className="home-hero">
@@ -61,13 +77,40 @@ function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStat
         </div>
       </section>
 
+      {isAdmin && <section className="home-section admin-section"><AdminTaskPanel tasks={tasks} residents={residents} onSave={onSaveTask} onDelete={onDeleteTask} /></section>}
+
       <div className="home-bottom-grid">
         <section className="home-section compact-section">
-          <div className="section-heading"><div><p className="eyebrow">RESPONSABILIDADE DO DIA</p><h2>Coleta de lixo</h2></div><span className="trash-icon">⌁</span></div>
+          <div className="section-heading"><div><p className="eyebrow">ACOMPANHAMENTO DO LIXO</p><h2>Coleta de lixo</h2></div><span className="trash-icon">⌁</span></div>
           <div className="glass-panel trash-panel">
-            <p>{responsible ? "Responsável pela coleta de hoje" : "Responsável pela coleta"}</p>
-            {responsible ? <div className="trash-responsible"><ResidentAvatar resident={responsible} /><strong>{responsible.name}</strong><span className="task-status done">Escalado</span></div> : <p className="trash-empty">A escala de coleta aparecerá aqui quando a API estiver disponível.</p>}
-            {eligibleResidents.length > 0 && <div className="eligible-list"><small>Elegíveis hoje</small>{eligibleResidents.map(person => <span key={person.id || person.name}><ResidentAvatar resident={person} size="small" />{person.name}</span>)}</div>}
+            <p>Quem está com o lixo?</p>
+            {responsible && <div className="trash-responsible"><ResidentAvatar resident={responsible} /><strong>{responsible.name}</strong><span className="task-status done">Responsável</span></div>}
+            <label className="trash-assignment-label" htmlFor="trash-responsible">Marcar responsável</label>
+            <div className="trash-controls">
+              <select id="trash-responsible" value={selectedResponsibleId} onChange={event => setSelectedResponsibleId(event.target.value)} disabled={!residents.length || trashAction !== ""}>
+                <option value="">Escolha um morador</option>
+                {residents.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}
+              </select>
+              <button type="button" disabled={!selectedResponsibleId || trashAction !== ""} onClick={() => runTrashAction(() => onAssignTrash(selectedResponsibleId), "assign")}>
+                {trashAction === "assign" ? "Salvando…" : "Salvar"}
+              </button>
+            </div>
+            {trashStatus?.isFull && (
+              <div className="trash-full-notice" role="status">
+                <strong>O lixo está cheio</strong>
+                <span>{responsible?.name ? `${responsible.name} está marcado como responsável.` : "Avise quem está responsável pela coleta."}</span>
+              </div>
+            )}
+            <div className="trash-controls trash-report-controls">
+              <button type="button" className="trash-full-button" disabled={!residents.some(person => person.name === loggedUser) || trashAction !== "" || trashStatus?.isFull} onClick={() => runTrashAction(() => onReportTrashFull(), "full")}>
+                {trashAction === "full" ? "Enviando aviso…" : "Avisar que está cheio"}
+              </button>
+              {trashStatus?.isFull && <button type="button" className="trash-empty-button" disabled={trashAction !== ""} onClick={() => runTrashAction(() => onReportTrashEmptied(), "empty")}>
+                {trashAction === "empty" ? "Atualizando…" : "Já foi esvaziado"}
+              </button>}
+            </div>
+            {!loggedUser && <small className="trash-hint">Escolha seu perfil antes de enviar um aviso.</small>}
+            {trashActionError && <p className="trash-action-error" role="alert">{trashActionError}</p>}
           </div>
         </section>
         <section className="home-section compact-section">

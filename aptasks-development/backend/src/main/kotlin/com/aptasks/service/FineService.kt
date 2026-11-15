@@ -27,7 +27,7 @@ class FineService(private val fineRepository: FineRepository) {
             isPaid = false
         )
 
-        fineRepository.save(fine)
+        fineRepository.insert(fine)
 
     }
 }
