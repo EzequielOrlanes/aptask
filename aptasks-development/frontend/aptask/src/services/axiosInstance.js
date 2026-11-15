@@ -2,7 +2,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://aptasks-production.up.railway.app", // ou use API_URL
+  // REACT_APP_API_URL é gravada no build; sem ela, usa o backend no Render.
+  baseURL: process.env.REACT_APP_API_URL || "https://apptasks-e6oh.onrender.com",
 });
 
 api.interceptors.request.use(
