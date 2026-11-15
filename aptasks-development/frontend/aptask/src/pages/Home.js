@@ -1,124 +1,133 @@
-import React, { useEffect,useState } from 'react';
-import { Link } from "react-router-dom"
-import '../style/Home.css';
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import Img from "../imagem/ap103.png";
-import Ico from "../imagem/icon.svg";
-// import { logoutUser } from '../services/api';
-import { useNavigate } from 'react-router-dom';
+import ResidentAvatar from "../components/ResidentAvatar";
+import AdminTaskPanel from "../components/AdminTaskPanel";
+import "../style/Home.css";
 
-
-function Home({ loggedUser, setLoggedUser, tasks, rotation }) {
-  const navigate = useNavigate();
-    const [error, setError] = useState('');
-
-  const handleLogin = (userName) => {
-    setLoggedUser(userName);
-  };
+function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStatus, loading, isAdmin, onSaveTask, onDeleteTask, onAdminLogout, onAssignTrash, onReportTrashFull, onReportTrashEmptied }) {
+  const displayedResidents = residents.length ? residents : residentsFallback;
+  const responsible = trashStatus?.responsible;
+  const [selectedResponsibleId, setSelectedResponsibleId] = useState("");
+  const [trashAction, setTrashAction] = useState("");
+  const [trashActionError, setTrashActionError] = useState("");
 
   useEffect(() => {
-    console.log(`Usuário atualizado: ${loggedUser}`);
-  }, [loggedUser]);
+    setSelectedResponsibleId(responsible?.id || "");
+  }, [responsible?.id]);
 
-  // Filtra as tarefas com status "done"
-  const tasksDone = tasks.filter(task => task.status === true);
-
-  const [selectedTrashPerson, setSelectedTrashPerson] = React.useState(null);
-
-  const handleTrashResponsibility = (person) => {
-    setSelectedTrashPerson(person);
+  const runTrashAction = async (action, kind) => {
+    setTrashAction(kind);
+    setTrashActionError("");
+    try { await action(); }
+    catch { setTrashActionError("Não foi possível atualizar a informação do lixo. Tente novamente."); }
+    finally { setTrashAction(""); }
   };
 
-// const handleLogout = async () => {
-//   setError('');
-//   error('');
-//  try {
-//             const response = await logoutUser();
-//             console.log('Usuário Deslogado:', response.user);
-//             navigate('/login');
-
-//              // 5. Mostra feedback visual (opcional)
-//         } catch (error) {
-//             setError(error.message || 'Erro ao criar conta');
-//         }
-// }
-
-
   return (
-    <div>
-      <main>
-          <div className="logo_task"> <Link to="/home"> <img src={Img} alt="logo da página" /> </Link>
-          </div>
-          {/* <nav>
-              <button id="sign-out-btn" class="icon-btn">
-                        <img   onClick={() => handleLogout(loggedUser)} src={Ico} class="icon-img-btn" alt="Logout" />
-                  </button>
-            </nav>
-         */}
-        <div className='content'>
-          <h2> Moradores: </h2>
-          <div className='moradores'>
-            <ul>
-              <li onClick={() => handleLogin('Ezequiel')}> <Link to="/user" >Eze </Link></li>
-              <li onClick={() => handleLogin('Gabriela')}> <Link to="/user" >Gabs </Link></li>
-              <li onClick={() => handleLogin('Guilherme')}> <Link to="/user" >Guilhermo </Link></li>
-              <li onClick={() => handleLogin('Isabella')}> <Link to="/user" >Bella </Link></li>
-            </ul>
-          </div>
-          <h2> Tarefas já feitas:  </h2>
-          <div className='tarefas-feitas'>
-            <ul>
-            {tasksDone.length > 0 ? (
-                tasksDone.map((task, index) => (
-                  <li key={index}>{task.task} ✅ 
-                <p style={{ fontSize: "10px", fontWeight: "2px" }}>{task.data_and_time} </p>
-                  </li>
-                ))
-              ) : (
-                <li>Nenhuma tarefa concluída ainda. 😑 </li>
-              )}
-            </ul>
-          </div>
-          <h2> Coleta de lixo: </h2>
-          <div className='responsavel-lixo'>
-            <ul>
-              <li
-                onClick={() => handleTrashResponsibility('Ezequiel')}
-                className={selectedTrashPerson === 'Ezequiel' ? 'trash-selected' : ''}
-              >
-                Ezequiel {selectedTrashPerson === 'Ezequiel' && '🗑️'}
-              </li>
-              <li
-                onClick={() => handleTrashResponsibility('Gabriela')}
-                className={selectedTrashPerson === 'Gabriela' ? 'trash-selected' : ''}
-              >
-                Gabriela {selectedTrashPerson === 'Gabriela' && '🗑️'}
-              </li>
-              <li
-                onClick={() => handleTrashResponsibility('Guilherme')}
-                className={selectedTrashPerson === 'Guilherme' ? 'trash-selected' : ''}
-              >
-                Guilherme {selectedTrashPerson === 'Guilherme' && '🗑️'}
-              </li>
-              <li
-                onClick={() => handleTrashResponsibility('Isabella')}
-                className={selectedTrashPerson === 'Isabella' ? 'trash-selected' : ''}
-              >
-                Isabella {selectedTrashPerson === 'Isabella' && '🗑️'}
-              </li>
-            </ul>
-          </div>
-          <h2> Avisos: </h2>
-          <div className='quadro-avisos'>
-            <p> Camêras não estão funcionando.</p>
-          </div>
-         
+    <main className="home-page">
+      <header className="home-header">
+        <Link className="brand-lockup" to="/home" aria-label="AP103 início">
+          <span className="brand-mark"><img src={Img} alt="" /></span>
+          <span>CASA EM HARMONIA</span>
+        </Link>
+        {isAdmin ? <button type="button" className="header-indicator admin-session-button" onClick={onAdminLogout}><i /> Administrador · Sair</button> : <Link className="header-indicator admin-access-link" to="/login">Acesso administrativo <span aria-hidden="true">↗</span></Link>}
+      </header>
+
+      <section className="home-hero">
+        <p className="eyebrow">APARTAMENTO 103 · ROTINA DA CASA</p>
+        <h1>Uma casa leve começa<br />com todo mundo junto.</h1>
+        <p className="hero-copy">Acompanhe as tarefas da semana e mantenha tudo em equilíbrio.</p>
+      </section>
+
+      <section className="home-section residents-section">
+        <div className="section-heading">
+          <div><p className="eyebrow">QUEM MORA AQUI</p><h2>Escolha seu perfil</h2></div>
+          <span className="section-count">{displayedResidents.length.toString().padStart(2, "0")} moradores</span>
         </div>
-        <footer>
-          <p>Produced by @oezequiel.</p>
-        </footer>
-      </main>
-    </div>
+        <div className="resident-grid">
+          {displayedResidents.map((resident, index) => (
+            <Link
+              key={resident.id || resident.name}
+              to="/user"
+              className={`resident-card ${loggedUser === resident.name ? "is-selected" : ""}`}
+              onClick={() => setLoggedUser(resident.name)}
+            >
+              <ResidentAvatar resident={resident} className={`avatar-${index + 1}`} />
+              <span className="resident-copy"><strong>{resident.name}</strong><small>{resident.isAtHome === undefined ? resident.nickname : resident.isAtHome ? "Em casa" : "Fora de casa"}</small></span>
+              <span className="resident-arrow" aria-hidden="true">↗</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="home-section weekly-section">
+        <div className="section-heading">
+          <div><p className="eyebrow">SEMANA ATUAL</p><h2>Quadro de tarefas</h2></div>
+          <span className="glass-badge">↻ Rotação semanal</span>
+        </div>
+        <div className="task-list glass-panel">
+          {loading ? <p className="empty-state">Carregando tarefas…</p> : tasks.length ? tasks.map(item => (
+            <article className="task-row" key={item.id || `${item.userName}-${item.task}`}>
+              <span className={`task-check ${item.status ? "is-done" : ""}`}>{item.status ? "✓" : ""}</span>
+              <div className="task-row-copy"><strong>{item.task}</strong><small>Responsável: {item.userName}</small></div>
+              <span className={`task-status ${item.status ? "done" : "pending"}`}>{item.status ? "Concluída" : "Pendente"}</span>
+            </article>
+          )) : <p className="empty-state">As tarefas da semana aparecerão aqui quando a API estiver disponível.</p>}
+        </div>
+      </section>
+
+      {isAdmin && <section className="home-section admin-section"><AdminTaskPanel tasks={tasks} residents={residents} onSave={onSaveTask} onDelete={onDeleteTask} /></section>}
+
+      <div className="home-bottom-grid">
+        <section className="home-section compact-section">
+          <div className="section-heading"><div><p className="eyebrow">ACOMPANHAMENTO DO LIXO</p><h2>Coleta de lixo</h2></div><span className="trash-icon">⌁</span></div>
+          <div className="glass-panel trash-panel">
+            <p>Quem está com o lixo?</p>
+            {responsible && <div className="trash-responsible"><ResidentAvatar resident={responsible} /><strong>{responsible.name}</strong><span className="task-status done">Responsável</span></div>}
+            <label className="trash-assignment-label" htmlFor="trash-responsible">Marcar responsável</label>
+            <div className="trash-controls">
+              <select id="trash-responsible" value={selectedResponsibleId} onChange={event => setSelectedResponsibleId(event.target.value)} disabled={!residents.length || trashAction !== ""}>
+                <option value="">Escolha um morador</option>
+                {residents.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}
+              </select>
+              <button type="button" disabled={!selectedResponsibleId || trashAction !== ""} onClick={() => runTrashAction(() => onAssignTrash(selectedResponsibleId), "assign")}>
+                {trashAction === "assign" ? "Salvando…" : "Salvar"}
+              </button>
+            </div>
+            {trashStatus?.isFull && (
+              <div className="trash-full-notice" role="status">
+                <strong>O lixo está cheio</strong>
+                <span>{responsible?.name ? `${responsible.name} está marcado como responsável.` : "Avise quem está responsável pela coleta."}</span>
+              </div>
+            )}
+            <div className="trash-controls trash-report-controls">
+              <button type="button" className="trash-full-button" disabled={!residents.some(person => person.name === loggedUser) || trashAction !== "" || trashStatus?.isFull} onClick={() => runTrashAction(() => onReportTrashFull(), "full")}>
+                {trashAction === "full" ? "Enviando aviso…" : "Avisar que está cheio"}
+              </button>
+              {trashStatus?.isFull && <button type="button" className="trash-empty-button" disabled={trashAction !== ""} onClick={() => runTrashAction(() => onReportTrashEmptied(), "empty")}>
+                {trashAction === "empty" ? "Atualizando…" : "Já foi esvaziado"}
+              </button>}
+            </div>
+            {!loggedUser && <small className="trash-hint">Escolha seu perfil antes de enviar um aviso.</small>}
+            {trashActionError && <p className="trash-action-error" role="alert">{trashActionError}</p>}
+          </div>
+        </section>
+        <section className="home-section compact-section">
+          <div className="section-heading"><div><p className="eyebrow">RECADO RÁPIDO</p><h2>Avisos da casa</h2></div><span className="notice-icon">✳</span></div>
+          <div className="glass-panel notice-panel"><span className="notice-dot" /><p>Câmeras não estão funcionando.</p></div>
+        </section>
+      </div>
+      <footer className="home-footer">AP103 <span>•</span> Feito para morar melhor</footer>
+    </main>
   );
 }
+
+const residentsFallback = [
+  { name: "Ezequiel", nickname: "Eze", initials: "EZ" },
+  { name: "Gabriela", nickname: "Gabs", initials: "GA" },
+  { name: "Guilherme", nickname: "Gui", initials: "GU" },
+  { name: "Isabella", nickname: "Bella", initials: "IS" },
+];
 
 export default Home;

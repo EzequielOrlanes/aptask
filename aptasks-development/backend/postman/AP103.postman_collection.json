@@ -1,0 +1,125 @@
+{
+  "info": {
+    "_postman_id": "2019aaa6-8305-4de8-a370-103c9afe54da",
+    "name": "AP103 API",
+    "description": "Fluxos para validar moradores, presença e CRUD das tarefas semanais. Execute o fluxo CRUD em ordem; a pasta Presença altera um dado real do morador selecionado.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Moradores",
+      "item": [
+        {
+          "name": "Listar moradores e selecionar o primeiro",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/residents" },
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": [
+              "pm.test('retorna HTTP 200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.test('resposta contém a lista de moradores', function () { pm.expect(body.success).to.eql(true); pm.expect(body.data).to.be.an('array'); });",
+              "if (body.data && body.data.length > 0) { pm.environment.set('residentId', body.data[0].id); pm.environment.set('residentOriginalPresence', String(body.data[0].isAtHome)); }"
+            ] }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "2. CRUD de tarefas (execute em ordem)",
+      "item": [
+        {
+          "name": "Listar tarefas cadastradas",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/tasks" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('retorna HTTP 200', function () { pm.response.to.have.status(200); });",
+            "const body = pm.response.json();",
+            "pm.test('resposta contém uma lista', function () { pm.expect(body.success).to.eql(true); pm.expect(body.data).to.be.an('array'); });"
+          ] } }]
+        },
+        {
+          "name": "Criar tarefa de teste",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+            "pm.environment.set('taskDeadline', new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString());"
+          ] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('cria tarefa com HTTP 201', function () { pm.response.to.have.status(201); });",
+            "const body = pm.response.json();",
+            "pm.test('retorna a tarefa criada', function () { pm.expect(body.success).to.eql(true); pm.expect(body.data.id).to.be.a('string'); });",
+            "if (body.data && body.data.id) pm.environment.set('taskId', body.data.id);"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"description\": \"[Postman] Limpar a cozinha\",\n  \"responsible_user\": \"{{residentId}}\",\n  \"dueAt\": \"{{taskDeadline}}\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/tasks/create" }
+        },
+        {
+          "name": "Consultar tarefa criada",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/tasks/{{taskId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('retorna HTTP 200', function () { pm.response.to.have.status(200); });",
+            "const body = pm.response.json();",
+            "pm.test('id retornado corresponde ao id salvo', function () { pm.expect(body.data.id).to.eql(pm.environment.get('taskId')); });"
+          ] } }]
+        },
+        {
+          "name": "Editar tarefa criada",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+            "pm.environment.set('updatedTaskDeadline', new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString());"
+          ] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('retorna HTTP 200', function () { pm.response.to.have.status(200); });",
+            "const body = pm.response.json();",
+            "pm.test('descrição foi alterada', function () { pm.expect(body.data.description).to.eql('[Postman] Limpar a cozinha - editada'); });"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"description\": \"[Postman] Limpar a cozinha - editada\",\n  \"responsible_user\": \"{{residentId}}\",\n  \"dueAt\": \"{{updatedTaskDeadline}}\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/tasks/{{taskId}}" }
+        },
+        {
+          "name": "Consultar distribuição semanal",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/tasks/weekly" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('retorna HTTP 200', function () { pm.response.to.have.status(200); });",
+            "const body = pm.response.json();",
+            "pm.test('resposta contém tarefas com responsável e prazo', function () { pm.expect(body.data).to.be.an('array'); const task = body.data.find(item => item.id === pm.environment.get('taskId')); pm.expect(task, 'tarefa recém-criada').to.exist; pm.expect(task.userName).to.be.a('string'); pm.expect(task.deadline).to.be.a('string'); });"
+          ] } }]
+        },
+        {
+          "name": "Marcar tarefa de teste como concluída",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"done\": true\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/tasks/{{taskId}}/decision" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('retorna HTTP 200', function () { pm.response.to.have.status(200); });",
+            "const body = pm.response.json();",
+            "pm.test('tarefa fica concluída', function () { pm.expect(body.data.status).to.eql('done'); pm.expect(body.data.decisionRecorded).to.eql(true); });"
+          ] } }]
+        },
+        {
+          "name": "Apagar tarefa de teste",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/tasks/{{taskId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('retorna HTTP 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('operação foi confirmada', function () { pm.expect(pm.response.json().success).to.eql(true); });"
+          ] } }]
+        },
+        {
+          "name": "Confirmar que foi apagada (espera 404)",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/tasks/{{taskId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('tarefa apagada não é encontrada', function () { pm.response.to.have.status(404); });",
+            "pm.environment.unset('taskId');"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "3. Presença (altera dado do morador)",
+      "item": [
+        {
+          "name": "Atualizar presença do morador selecionado",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"isAtHome\": {{isAtHome}}\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/residents/{{residentId}}/presence" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('retorna HTTP 200', function () { pm.response.to.have.status(200); });",
+            "const body = pm.response.json();",
+            "pm.test('presença retornada corresponde ao valor enviado', function () { pm.expect(body.data.isAtHome).to.eql(pm.environment.get('isAtHome') === 'true'); });"
+          ] } }]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" }
+  ]
+}

@@ -11,7 +11,6 @@ class SupabaseConfig {
     
     @Value("\${supabase.url}")
     lateinit var supabaseUrl: String
-    
     @Value("\${supabase.key}")
     lateinit var supabaseKey: String
     

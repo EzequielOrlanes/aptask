@@ -1,157 +1,78 @@
-import React, { useState, useEffect } from "react";
-import { data, Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import Img from "../imagem/ap103.png";
-import '../style/Task.css';
-import 'animate.css';
-import confetti from 'canvas-confetti';
-import { AvisosSaveToDB } from '../services/api';
-import { setStatusTasks } from '../services/api';
+import ResidentAvatar from "../components/ResidentAvatar";
+import "../style/Task.css";
 
+function Task({ loggedUser, resident, tasks = [], trashStatus, loading, onDecision, onPresenceChange }) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const recordDecision = async done => {
+    setSaving(true);
+    setError("");
+    try { await onDecision(done.taskId, done.value); }
+    catch { setError("Não foi possível salvar sua resposta. Tente novamente."); }
+    finally { setSaving(false); }
+  };
+  const changePresence = async () => {
+    setError("");
+    try { await onPresenceChange(!resident.isAtHome); }
+    catch { setError("Não foi possível atualizar sua presença. Tente novamente."); }
+  };
 
-function Task({ loggedUser, rotation, tasks, setTasks, currentWeek }) {
-    const [taskStatus, setTaskStatus] = useState(false);
-    const user = rotation.find((r) => r.name === loggedUser);
-    const taskIndex = user.tasks && user.tasks[currentWeek - 1] !== undefined ? user.tasks[currentWeek - 1] : -1;
-    const task = taskIndex >= 0 && taskIndex < tasks.length ? tasks[taskIndex] : null;
-    const [aviso, setAviso] = useState('');
-
-    useEffect(() => {
-        if (task) {
-            setTaskStatus(task.status);
-        }
-    }, [task]);
-
-
-    const handleChangeAviso = (e) => {
-        setAviso(e.target.value);
-    }
-
-    const handleAvisoSubmit = async () => {
-        try {
-            await AvisosSaveToDB({ aviso: aviso });
-            console.log('Aviso salvo no banco de dados com sucesso!');
-        } catch (error) {
-            console.error('Erro ao salvar aviso no banco de dados:', error);
-        }
-    };
-
-
-    const toggleTaskStatus = () => {
-        const newStatus = !taskStatus;
-        setTaskStatus(newStatus);
-
-        if (newStatus) { // Só executa quando a tarefa é marcada como concluída (true)
-            const currentDate = new Date();
-            const formattedDateTime = `Tarefa concluída em: ${currentDate.toLocaleDateString()} às ${currentDate.toLocaleTimeString()}`;
-            setTasks((prevTasks) =>
-                prevTasks.map((t, index) =>
-                    index === taskIndex
-                        ? {
-                            ...t,
-                            status: newStatus,
-                            data_and_time: formattedDateTime // Atualiza o campo
-                        }
-                        : t
-                )
-            );
-            // Dispara confetes
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 },
-            });
-        } else {
-            // Se a tarefa for desmarcada  limpar a data)
-            setTasks((prevTasks) =>
-                prevTasks.map((t, index) =>
-                    index === taskIndex
-                        ? { ...t, status: newStatus }
-                        : t
-                )
-            );
-        }
-    };
-
-    return (
-        <div>
-            <div className="content_task">
-                <div className="logo_task">
-                    <Link to="/home">
-                        <img src={Img} alt="logo da página" />
-                    </Link>
+  return (
+    <main className="task-page">
+      <header className="task-header">
+        <Link className="brand-lockup" to="/home"><span className="brand-mark"><img src={Img} alt="" /></span><span>CASA EM HARMONIA</span></Link>
+        <Link className="back-home" to="/home">← Início</Link>
+      </header>
+      <section className="task-content">
+        <p className="eyebrow">SUA ROTINA · ESTA SEMANA</p>
+        <h1>Olá, {loggedUser}.</h1>
+        <section className="presence-panel">
+          <ResidentAvatar resident={resident || { name: loggedUser }} size="large" />
+          <div className="presence-copy"><strong>Você está em casa?</strong><small>Seu status ajuda a calcular prazos e verificar se você pode ficar responsável pelo lixo.</small>{resident?.presenceSync === "pending" && <small role="status">Salvo neste dispositivo; será sincronizado após 30 s sem alterações.</small>}{resident?.presenceSync === "saved" && <small role="status">Presença sincronizada.</small>}</div>
+          <button type="button" className={`presence-toggle ${resident?.isAtHome ? "at-home" : "away"}`} aria-pressed={!!resident?.isAtHome} disabled={!resident?.id} onClick={changePresence}>
+            <span className="presence-switch" />{resident?.isAtHome ? "Estou em casa" : resident?.id ? "Estou fora" : "Conectando…"}
+          </button>
+        </section>
+        {trashStatus?.isFull && trashStatus?.responsible?.id === resident?.id && (
+          <aside className="trash-resident-nudge" role="status">
+            <strong>Cutucada da casa: o lixo está cheio.</strong>
+            <span>Você está marcado como responsável. Quando esvaziar, atualize o status na tela inicial.</span>
+          </aside>
+        )}
+        <h2>Suas tarefas desta semana</h2>
+        {loading ? <p>Carregando tarefas…</p> : tasks.length ? tasks.map(task => (
+          <article className="weekly-resident-task" key={task.id}>
+            <div className="tarefa-morador"><p>{task.description}</p></div>
+            {task.deadline && <p className="task-deadline"><span>Prazo</span><strong>{new Date(task.deadline).toLocaleString("pt-BR", { dateStyle: "medium", timeStyle: "short" })}</strong></p>}
+            {task.status === "done" ? (
+              <p className="task-result done">Tarefa marcada como concluída. Obrigado!</p>
+            ) : task.fineApplied ? (
+              <p className="task-result missed">Prazo não cumprido. Multa de {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(task.fineAmount || 0)} registrada.</p>
+            ) : task.decisionRecorded ? (
+              <>
+                <p className="task-result pending">Resposta registrada. Se continuar pendente no prazo, a regra de multa será aplicada.</p>
+                <div className="task-actions"><button type="button" className="done-button" disabled={saving} onClick={() => recordDecision({ taskId: task.id, value: true })}>Marcar como feita</button></div>
+              </>
+            ) : (
+              <>
+                <p className="task-question">Você concluiu esta tarefa?</p>
+                <div className="task-actions">
+                  <button type="button" className="done-button" disabled={saving} onClick={() => recordDecision({ taskId: task.id, value: true })}>Fiz</button>
+                  <button type="button" className="missed-button" disabled={saving} onClick={() => recordDecision({ taskId: task.id, value: false })}>Ainda não fiz</button>
                 </div>
-                <div className="content_task">
-                    <h1>Olá, {loggedUser}.</h1>
-                    <h2>Sua tarefa da semana:</h2>
-                    {task ? (
-                        <div className="tarefa-morador">
-                            <p>{task.task}</p>
-                        </div>
-                    ) : (
-                        <div className="tarefa-morador">
-                            <p>Nenhuma tarefa atribuída esta semana</p>
-                        </div>
-                    )}
-                    <h2>Status da tarefa:</h2>
-                    <div className="status-tarefa" data-status={taskStatus ? "done" : "pending"}
-                    >
-                        <li>
-                            {taskStatus ? 'Feita' : 'Pendente'}
-                        </li>
-                        <div className="status-button">
-
-                            <button onClick={async () => {
-                                try {
-                                    await setStatusTasks("Banheiro social", false);
-                                    console.log('Status Mudado com Sucesso!');
-                                } catch (error) {
-                                    console.error('Não deu certo. Erro:', error);
-                                    alert('Erro ao atualizar task. Tente novamente.');
-                                }
-                                toggleTaskStatus();
-                                if (!taskStatus) {
-                                    const date = new Date();
-                                    console.log(`Tarefa concluída em: ${date.toLocaleDateString()} às ${date.toLocaleTimeString()}`);
-                                }
-                            }}>
-                                Alternar Status
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="multas_div">
-                        <h2>Multas recebidas:</h2>
-                        <div className="multas_morador">
-                            <p>   Vasilhas sujas</p>
-                        </div>
-                        <div className="multa-button">
-                            <button>Aplicar uma multa</button>
-                        </div>
-                    </div>
-                    <div className="aviso_div">
-                        <h2>Quadro de Avisos :</h2>
-                        <div className="avisos-input">
-                            <input
-                                type="text"
-                                id="meuInput"
-                                value={aviso}
-                                onChange={handleChangeAviso}
-                                placeholder="Adicionar um aviso..."
-                            />
-
-                        </div>
-                        <div className="avisos-button">
-                            <button onClick={handleAvisoSubmit}>Adicionar Aviso</button>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-            <footer>
-                <p>Produced by @oezequiel.</p>
-            </footer>
-        </div>
-    );
+              </>
+            )}
+          </article>
+        )) : <p>Você não tem tarefas atribuídas nesta semana.</p>}
+        {error && <p role="alert" className="task-error">{error}</p>}
+      <p className="week-note">A distribuição é renovada semanalmente. O responsável e o prazo são definidos pelo backend.</p>
+      </section>
+      <footer className="task-footer">AP103 <span>•</span> Feito para morar melhor</footer>
+    </main>
+  );
 }
 
 export default Task;

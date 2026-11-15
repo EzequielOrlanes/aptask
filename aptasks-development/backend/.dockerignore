@@ -1,0 +1,23 @@
+# Artefatos de build e cache locais
+build/
+bin/
+.gradle/
+.gradle-cache/
+out/
+.idea/
+
+# Segredos nunca entram na imagem
+.env
+.env.*
+
+# Arquivos que não servem ao build
+.git/
+.gitignore
+.gitattributes
+log.txt
+postman/
+docs/
+*.md
+
+# Configuração específica da máquina local (caminho Windows do JDK)
+gradle.properties

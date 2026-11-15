@@ -17,18 +17,16 @@ API REST de autenticação desenvolvida em Kotlin com Spring Boot.
 
 ## ⚙️ Configuração
 
-1. Copie o arquivo `.env.example` para `.env`:
-```bash
-cp .env.example .env
+1. Instale/inicie o PostgreSQL e crie o banco `aptasks`.
+
+2. Configure as variáveis de ambiente no PowerShell antes de executar o backend:
+```
+$env:DB_URL="jdbc:postgresql://localhost:5432/aptasks"
+$env:DB_USERNAME="postgres"
+$env:DB_PASSWORD="sua_senha_do_postgres"
 ```
 
-2. Configure as variáveis de ambiente no `.env`:
-```
-SUPABASE_URL=sua_url_do_supabase
-SUPABASE_SERVICE_KEY=sua_chave_de_servico
-```
-
-3. Ou configure diretamente no `application.properties`
+`DB_URL` pode apontar para qualquer servidor PostgreSQL acessível, local ou remoto. O backend usa `localhost:5432/aptasks`, usuário `postgres` e senha vazia como valores padrão. Para autenticação Supabase, configure também `SUPABASE_API_URL` e `SUPABASE_KEY`.
 
 ## 🏃 Como executar
 
@@ -43,6 +41,12 @@ SUPABASE_SERVICE_KEY=sua_chave_de_servico
 ```
 
 O servidor estará rodando em `http://localhost:3000`
+
+## 🗃️ Diagramas do banco
+
+Consulte [docs/diagramas-banco.md](docs/diagramas-banco.md) para ver os diagramas ER e relacional. Eles foram reconstruídos do código e devem ser conferidos com o schema real do PostgreSQL.
+
+Para ativar o histórico semanal de atribuições, execute `src/main/resources/db/migration/V4__task_rotation_history.sql` no banco PostgreSQL depois das migrações V2 e V3. As migrações são scripts SQL e não são aplicadas automaticamente pelo `bootRun`.
 
 ## 📡 Endpoint
 
@@ -105,8 +109,11 @@ java -jar build/libs/aptasks-backend-1.0.0.jar
 
 ### Configurar variáveis de ambiente no servidor:
 ```
-SUPABASE_URL=...
-SUPABASE_SERVICE_KEY=...
+DB_URL=jdbc:postgresql://host:5432/aptasks
+DB_USERNAME=...
+DB_PASSWORD=...
+SUPABASE_API_URL=...
+SUPABASE_KEY=...
 ```
 
 ### Executar em produção:
