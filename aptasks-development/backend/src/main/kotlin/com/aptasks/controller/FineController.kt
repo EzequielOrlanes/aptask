@@ -11,7 +11,7 @@ import java.time.Instant
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/fines")
+@RequestMapping("/fines")
 class FineController(private val fineService: FineService) {
 
     /** Registra uma multa manual entre dois moradores. Erros de validação viram 400 pelo GlobalExceptionHandler. */

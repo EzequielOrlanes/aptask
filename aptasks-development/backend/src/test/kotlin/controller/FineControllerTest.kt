@@ -37,7 +37,7 @@ class FineControllerTest {
         val fine = storedFine()
         every { fineService.applyFine(any()) } returns fine
 
-        mockMvc.post("/api/fines") {
+        mockMvc.post("/fines") {
             contentType = MediaType.APPLICATION_JSON
             content = validFineRequest()
         }.andExpect {
@@ -54,7 +54,7 @@ class FineControllerTest {
     fun `returns bad request when fine data is invalid`() {
         every { fineService.applyFine(any()) } throws IllegalArgumentException("UUID do remetente (sender) é inválido.")
 
-        mockMvc.post("/api/fines") {
+        mockMvc.post("/fines") {
             contentType = MediaType.APPLICATION_JSON
             content = validFineRequest()
         }.andExpect {
@@ -82,7 +82,7 @@ class FineControllerTest {
         )
         every { fineService.findForResident(userId) } returns listOf(fine)
 
-        mockMvc.get("/api/fines") { param("userId", userId.toString()) }.andExpect {
+        mockMvc.get("/fines") { param("userId", userId.toString()) }.andExpect {
             status { isOk() }
             jsonPath("$.count") { value(1) }
             jsonPath("$.data[0].direction") { value("received") }
@@ -92,7 +92,7 @@ class FineControllerTest {
 
     @Test
     fun `listing with a malformed userId is a bad request`() {
-        mockMvc.get("/api/fines") { param("userId", "nao-uuid") }.andExpect {
+        mockMvc.get("/fines") { param("userId", "nao-uuid") }.andExpect {
             status { isBadRequest() }
             jsonPath("$.error") { value("O identificador do morador é inválido.") }
         }
@@ -103,7 +103,7 @@ class FineControllerTest {
         val fine = storedFine(isPaid = true)
         every { fineService.markPaid(fine.id) } returns fine
 
-        mockMvc.patch("/api/fines/${fine.id}/paid").andExpect {
+        mockMvc.patch("/fines/${fine.id}/paid").andExpect {
             status { isOk() }
             jsonPath("$.success") { value(true) }
             jsonPath("$.data.isPaid") { value(true) }
@@ -115,7 +115,7 @@ class FineControllerTest {
         val id = UUID.randomUUID()
         every { fineService.markPaid(id) } throws FineNotFoundException(id)
 
-        mockMvc.patch("/api/fines/$id/paid").andExpect {
+        mockMvc.patch("/fines/$id/paid").andExpect {
             status { isNotFound() }
             jsonPath("$.success") { value(false) }
         }
@@ -123,7 +123,7 @@ class FineControllerTest {
 
     @Test
     fun `marking a fine with a malformed id is a bad request`() {
-        mockMvc.patch("/api/fines/nao-uuid/paid").andExpect {
+        mockMvc.patch("/fines/nao-uuid/paid").andExpect {
             status { isBadRequest() }
         }
         verify(exactly = 0) { fineService.markPaid(any()) }
