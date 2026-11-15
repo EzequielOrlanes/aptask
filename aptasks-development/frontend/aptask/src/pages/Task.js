@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Img from "../imagem/ap103.png";
 import ResidentAvatar from "../components/ResidentAvatar";
+import FinesPanel from "../components/FinesPanel";
 import { FILL_LABELS, getFillLevel } from "../components/TrashBin";
 import "../style/Task.css";
 
-function Task({ loggedUser, resident, tasks = [], trashStatus, loading, onDecision, onPresenceChange }) {
+function Task({ loggedUser, resident, tasks = [], trashStatus, loading, onDecision, onPresenceChange, fines = [], finesLoading = false, residents = [], onApplyFine, onMarkFinePaid }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const recordDecision = async done => {
@@ -72,6 +73,14 @@ function Task({ loggedUser, resident, tasks = [], trashStatus, loading, onDecisi
           </article>
         )) : <p>Você não tem tarefas atribuídas nesta semana.</p>}
         {error && <p role="alert" className="task-error">{error}</p>}
+        <FinesPanel
+          fines={fines}
+          residents={residents}
+          currentResident={resident}
+          loading={finesLoading}
+          onApplyFine={onApplyFine}
+          onMarkFinePaid={onMarkFinePaid}
+        />
       <p className="week-note">A distribuição é renovada semanalmente. O responsável e o prazo são definidos pelo backend.</p>
       </section>
       <footer className="task-footer">AP103 <span>•</span> Feito para morar melhor</footer>

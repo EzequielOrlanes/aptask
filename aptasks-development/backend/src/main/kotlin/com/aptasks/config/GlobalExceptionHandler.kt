@@ -1,6 +1,7 @@
 package com.aptasks.config // <- Única mudança é o pacote
 
 import com.aptasks.dto.ApiResponse
+import com.aptasks.exception.FineNotFoundException
 import com.aptasks.exception.TaskNotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -16,6 +17,16 @@ class GlobalExceptionHandler {
         val response = ApiResponse<Unit>(
             success = false,
             error = ex.message ?: "Tarefa não encontrada.",
+            timestamp = Instant.now().toString()
+        )
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response)
+    }
+
+    @ExceptionHandler(FineNotFoundException::class)
+    fun handleFineNotFoundException(ex: FineNotFoundException): ResponseEntity<ApiResponse<Unit>> {
+        val response = ApiResponse<Unit>(
+            success = false,
+            error = ex.message ?: "Multa não encontrada.",
             timestamp = Instant.now().toString()
         )
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response)

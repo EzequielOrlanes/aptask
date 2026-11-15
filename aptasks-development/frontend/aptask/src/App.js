@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Task from "./pages/Task.js";
 import Home from "./pages/Home.js";
 import Login from "./pages/Login.js";
-import { getWeeklyTasks, getResidents, getTrashStatus, updateResidentPresence, submitWeeklyDecision, createTask, updateTask, deleteTask, assignTrashResponsible, reportTrashHalf, reportTrashFull, reportTrashEmptied } from "./services/api";
+import { getWeeklyTasks, getResidents, getTrashStatus, updateResidentPresence, submitWeeklyDecision, createTask, updateTask, deleteTask, assignTrashResponsible, reportTrashHalf, reportTrashFull, reportTrashEmptied, getFines, createFine, markFinePaid } from "./services/api";
 
 const PRESENCE_STORAGE_KEY = "ap103.pending-presence.v1";
 const AUTH_USER_STORAGE_KEY = "ap103.auth-user.v1";
@@ -35,6 +35,8 @@ function App() {
   const [residents, setResidents] = useState([]);
   const [pendingPresence, setPendingPresence] = useState(readPendingPresence);
   const [trashStatus, setTrashStatus] = useState(null);
+  const [fines, setFines] = useState([]);
+  const [finesLoading, setFinesLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -67,6 +69,23 @@ function App() {
     return () => window.clearInterval(interval);
   }, [refreshTrashStatus]);
 
+  // Multas pertencem ao morador logado: carregadas ao escolher o perfil e atualizadas a cada 30 s.
+  const currentResident = residents.find(item => item.name === loggedUser);
+  const fineResidentId = currentResident?.id;
+  const refreshFines = useCallback(async residentId => {
+    if (!residentId) { setFines([]); return; }
+    setFinesLoading(true);
+    try { setFines(await getFines(residentId)); }
+    catch { setError("Não foi possível carregar as multas. Confira a conexão com o backend."); }
+    finally { setFinesLoading(false); }
+  }, []);
+  useEffect(() => { refreshFines(fineResidentId); }, [fineResidentId, refreshFines]);
+  useEffect(() => {
+    if (!fineResidentId) return undefined;
+    const interval = window.setInterval(() => refreshFines(fineResidentId), 30000);
+    return () => window.clearInterval(interval);
+  }, [fineResidentId, refreshFines]);
+
   const currentTasks = weeklyTasks.map(item => ({
     ...item,
     task: item.description,
@@ -74,6 +93,15 @@ function App() {
     data_and_time: item.status === "done" ? "Concluída nesta semana" : "",
   }));
   const residentTasks = weeklyTasks.filter(item => item.userName === loggedUser);
+  const applyManualFine = async ({ receiverId, amount }) => {
+    if (!fineResidentId) throw new Error("Escolha seu perfil antes de aplicar uma multa.");
+    await createFine({ sender: fineResidentId, receiver: receiverId, amount });
+    await refreshFines(fineResidentId);
+  };
+  const payFine = async fineId => {
+    await markFinePaid(fineId);
+    await refreshFines(fineResidentId);
+  };
   const submitDecision = async (taskId, done) => {
     const updated = await submitWeeklyDecision(taskId, done);
     setWeeklyTasks(items => items.map(item => item.id === updated.id ? updated : item));
@@ -180,7 +208,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home {...homeProps} />} />
         <Route path="/login" element={<Login onAuthenticated={acceptAuthResponse} />} />
-        <Route path="/user" element={loggedUser ? <Task loggedUser={loggedUser} resident={residents.find(item => item.name === loggedUser)} tasks={residentTasks} trashStatus={trashStatus} loading={loading} onDecision={submitDecision} onPresenceChange={changePresence} /> : <Navigate to="/" />} />
+        <Route path="/user" element={loggedUser ? <Task loggedUser={loggedUser} resident={currentResident} tasks={residentTasks} trashStatus={trashStatus} loading={loading} onDecision={submitDecision} onPresenceChange={changePresence} fines={fines} finesLoading={finesLoading} residents={residents} onApplyFine={applyManualFine} onMarkFinePaid={payFine} /> : <Navigate to="/" />} />
         <Route path="/home" element={<Home {...homeProps} />} />
       </Routes>
     </Router>

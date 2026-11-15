@@ -1,8 +1,11 @@
 package com.aptasks.service
 
 import com.aptasks.dto.fine.FineRequest
+import com.aptasks.model.Fine
 import com.aptasks.model.Task
 import com.aptasks.model.User
+import java.math.BigDecimal
+import java.time.LocalDateTime
 import com.aptasks.repository.TaskRepository
 import com.aptasks.repository.UserRepository
 import io.mockk.every
@@ -69,8 +72,9 @@ class TaskServiceStatusTest {
         every { tasks.findById(task.id) } returns task
         every { tasks.update(any()) } answers { firstArg() }
         every { users.findById(home.id) } returns home
+        every { users.findById(senderId) } returns User(senderId, "Casa", "casa@example.test")
         val fineRequest = slot<FineRequest>()
-        every { fines.applyFine(capture(fineRequest)) } just runs
+        every { fines.applyFine(capture(fineRequest)) } returns fineStub()
         every { tasks.markFineApplied(task.id, any()) } just runs
 
         service.toggleStatus(task.id)
@@ -139,28 +143,40 @@ class TaskServiceStatusTest {
     // ---------- evaluateOverdueTasks: caminhos de erro ----------
 
     @Test
-    fun `evaluateOverdueTasks fails when the responsible id is not a UUID`() {
+    fun `evaluateOverdueTasks skips a task whose responsible id is not a UUID and keeps going`() {
         val broken = task(home, dueAt = Instant.now().minusSeconds(60)).copy(userId = "nao-uuid")
-        every { tasks.findOverdue(any()) } returns listOf(broken)
+        val ok = task(away, dueAt = Instant.now().minusSeconds(60))
+        every { tasks.findOverdue(any()) } returns listOf(broken, ok)
+        every { users.findById(away.id) } returns away
+        every { tasks.postponeDeadline(ok.id, any()) } just runs
 
-        val error = assertThrows<IllegalStateException> { service.evaluateOverdueTasks(Instant.now()) }
+        val postponed = service.evaluateOverdueTasks(Instant.now())
 
-        assertTrue(error.message!!.contains("ID inválido"))
+        assertEquals(1, postponed)
         verify(exactly = 0) { fines.applyFine(any()) }
+        verify(exactly = 0) { tasks.postponeDeadline(broken.id, any()) }
     }
 
     @Test
-    fun `evaluateOverdueTasks fails when the responsible resident does not exist`() {
+    fun `evaluateOverdueTasks skips a task whose responsible resident does not exist`() {
         val task = task(home, dueAt = Instant.now().minusSeconds(60))
         every { tasks.findOverdue(any()) } returns listOf(task)
         every { users.findById(home.id) } returns null
 
-        assertThrows<IllegalStateException> { service.evaluateOverdueTasks(Instant.now()) }
+        assertEquals(0, service.evaluateOverdueTasks(Instant.now()))
 
         verify(exactly = 0) { tasks.postponeDeadline(any(), any()) }
+        verify(exactly = 0) { fines.applyFine(any()) }
     }
 
     // ---------- helpers ----------
+
+    private fun fineStub() = Fine(
+        timestamp = LocalDateTime.now(),
+        amount = BigDecimal("5.00"),
+        sender = senderId,
+        receiver = home.id
+    )
 
     private fun task(resident: User, dueAt: Instant? = null, fineAppliedAt: Instant? = null) = Task(
         id = UUID.randomUUID(),

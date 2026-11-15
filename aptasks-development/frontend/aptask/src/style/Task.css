@@ -57,3 +57,23 @@
 .presence-switch { background: rgba(216,237,241,.23); }.presence-switch::after { background: #c1d0d4; }.presence-toggle.at-home .presence-switch { background: rgba(0,207,227,.5); }.presence-toggle.at-home .presence-switch::after { background: #00cfe0; }
 .done-button { color: #051719; background: #00cfe0; }.missed-button { color: #ffc3c7; border-color: rgba(237,27,36,.28) !important; background: rgba(237,27,36,.12); }
 .task-result { border-color: rgba(216,237,241,.12); }.task-result.done { color: #9cf5fa; background: rgba(0,207,227,.1); }.task-result.missed { color: #ffc3c7; background: rgba(237,27,36,.1); }.task-error { color: #ffafb5; }.task-footer { color: #8a9ba0; }.task-footer span { color: #00cfe0; }
+
+/* Multas */
+.fines-panel { margin-top: 28px; }
+.fines-panel h3 { margin: 18px 0 8px; color: #b9cdd2; font-size: 13px; font-weight: 600; }
+.fine-form { display: grid; gap: 8px; margin-top: 12px; padding: 16px; border: 1px solid rgba(196,229,236,.14); border-radius: 16px; background: rgba(193,229,237,.045); }
+.fine-form-title { margin: 0 0 4px; color: #e7f1f3; font-size: 13px; font-weight: 600; }
+.fine-form label { color: #91aab2; font-size: 11px; }
+.fine-form select, .fine-form input { min-height: 42px; padding: 0 12px; border: 1px solid rgba(196,229,236,.17); border-radius: 10px; color: #e7f1f3; background: rgba(5,8,10,.35); font: inherit; font-size: 13px; }
+.fine-form button { min-height: 46px; margin-top: 4px; border: 0; border-radius: 12px; color: #062521; background: #8ad9c0; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.fine-form button:disabled, .fine-pay-button:disabled { opacity: .45; cursor: default; }
+.fine-hint { color: #8ca6af; font-size: 11px; }
+.fine-form .fine-hint[role="alert"] { color: #ffb4a7; }
+.fine-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.fine-item { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 13px 15px; border: 1px solid rgba(216,237,241,.12); border-radius: 14px; background: rgba(216,237,241,.035); }
+.fine-copy { display: grid; flex: 1 1 160px; gap: 4px; min-width: 0; }
+.fine-copy strong { color: #e7f1f3; font-size: 13px; font-weight: 600; }
+.fine-copy small { color: #8ca6af; font-size: 11px; }
+.fine-amount { color: #ffd2b7; font-size: 13px; font-weight: 600; }
+.fine-pay-button { min-height: 36px; padding: 0 12px; border: 1px solid rgba(128,212,187,.3); border-radius: 99px; color: #a8ead4; background: rgba(128,212,187,.09); font: inherit; font-size: 11px; cursor: pointer; }
+.fine-notice { color: #a8ead4; font-size: 13px; }

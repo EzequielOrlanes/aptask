@@ -4,6 +4,7 @@ import com.aptasks.dto.CreateTaskRequest
 import com.aptasks.model.Task
 import com.aptasks.repository.TaskRepository
 import com.aptasks.repository.UserRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.UUID
 import com.aptasks.dto.DashboardResponse
@@ -105,6 +106,10 @@ class TaskService(
      * Avalia tarefas vencidas. Se o responsável estiver fora, concede 24 horas
      * adicionais; para quem está em casa, registra a multa e marca a tarefa
      * como processada dentro da mesma transação.
+     *
+     * Uma tarefa que não pode receber multa (configuração ausente, dados inconsistentes)
+     * é registrada no log e fica pendente para a próxima execução, sem desfazer
+     * o processamento das demais.
      */
     @Transactional
     fun evaluateOverdueTasks(now: Instant = Instant.now()): Int {
@@ -113,9 +118,11 @@ class TaskService(
 
         overdueTasks.forEach { task ->
             val responsibleId = runCatching { UUID.fromString(task.userId) }.getOrNull()
-                ?: throw IllegalStateException("A tarefa ${task.id} tem um responsável com ID inválido.")
-            val responsible = userRepository.findById(responsibleId)
-                ?: throw IllegalStateException("O responsável da tarefa ${task.id} não foi encontrado.")
+            val responsible = responsibleId?.let { userRepository.findById(it) }
+            if (responsibleId == null || responsible == null) {
+                log.error("Tarefa {} ignorada: responsável inválido ou inexistente ({}).", task.id, task.userId)
+                return@forEach
+            }
 
             if (!responsible.isAtHome) {
                 taskRepository.postponeDeadline(task.id, now.plus(Duration.ofHours(24)))
@@ -168,12 +175,20 @@ class TaskService(
         }
     }
 
-    private fun applyTaskFine(task: Task, responsibleId: UUID, at: Instant) {
-        require(fineAmount > 0.0) { "O valor configurado para a multa precisa ser maior que zero." }
+    /**
+     * Registra a multa automática de uma tarefa vencida. Retorna false (e loga) quando
+     * a multa não pode ser registrada; nesse caso a tarefa continua sem multa aplicada.
+     */
+    private fun applyTaskFine(task: Task, responsibleId: UUID, at: Instant): Boolean {
         val senderId = runCatching { UUID.fromString(fineSenderId) }.getOrNull()
-            ?: throw IllegalStateException(
-                "Configure TASK_FINE_SENDER_ID com o UUID de um morador ou da conta da casa para registrar multas."
+        if (fineAmount <= 0.0 || senderId == null || senderId == responsibleId || userRepository.findById(senderId) == null) {
+            log.error(
+                "Multa da tarefa {} não registrada: configure TASK_FINE_AMOUNT (> 0) e TASK_FINE_SENDER_ID " +
+                    "com o UUID de um morador existente diferente do responsável.",
+                task.id
             )
+            return false
+        }
 
         fineService.applyFine(
             FineRequest(
@@ -184,5 +199,10 @@ class TaskService(
             )
         )
         taskRepository.markFineApplied(task.id, at)
+        return true
+    }
+
+    private companion object {
+        private val log = LoggerFactory.getLogger(TaskService::class.java)
     }
 }

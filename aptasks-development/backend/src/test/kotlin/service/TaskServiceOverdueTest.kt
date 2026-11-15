@@ -1,6 +1,7 @@
 package com.aptasks.service
 
 import com.aptasks.dto.fine.FineRequest
+import com.aptasks.model.Fine
 import com.aptasks.model.Task
 import com.aptasks.model.User
 import com.aptasks.repository.TaskRepository
@@ -13,10 +14,11 @@ import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDateTime
 import java.util.UUID
 
 class TaskServiceOverdueTest {
@@ -35,7 +37,10 @@ class TaskServiceOverdueTest {
         val fineRequest = slot<FineRequest>()
         every { tasks.findOverdue(now) } returns listOf(task)
         every { users.findById(resident.id) } returns resident
-        every { fines.applyFine(capture(fineRequest)) } just runs
+        every { users.findById(senderId) } returns User(senderId, "Casa", "casa@example.test")
+        every { fines.applyFine(capture(fineRequest)) } returns Fine(
+            timestamp = LocalDateTime.now(), amount = BigDecimal("5.00"), sender = senderId, receiver = resident.id
+        )
         every { tasks.markFineApplied(task.id, now) } just runs
 
         val postponed = service.evaluateOverdueTasks(now)
@@ -74,18 +79,35 @@ class TaskServiceOverdueTest {
     }
 
     @Test
-    fun `fails clearly when the fine sender is not configured`() {
+    fun `skips the fine but keeps processing other tasks when the fine sender is not configured`() {
+        val resident = resident(isAtHome = true)
+        val fined = overdueTask(resident)
+        val postponedResident = resident(isAtHome = false)
+        val postponed = overdueTask(postponedResident)
+        val serviceWithoutSender = TaskService(tasks, users, rotation, fines, 5.0, "")
+        every { tasks.findOverdue(now) } returns listOf(fined, postponed)
+        every { users.findById(resident.id) } returns resident
+        every { users.findById(postponedResident.id) } returns postponedResident
+        every { tasks.postponeDeadline(postponed.id, now.plus(Duration.ofHours(24))) } just runs
+
+        val count = serviceWithoutSender.evaluateOverdueTasks(now)
+
+        assertEquals(1, count)
+        verify(exactly = 0) { fines.applyFine(any()) }
+        verify(exactly = 0) { tasks.markFineApplied(any(), any()) }
+        verify(exactly = 1) { tasks.postponeDeadline(postponed.id, any()) }
+    }
+
+    @Test
+    fun `skips the fine when the configured sender does not exist`() {
         val resident = resident(isAtHome = true)
         val task = overdueTask(resident)
-        val serviceWithoutSender = TaskService(tasks, users, rotation, fines, 5.0, "")
         every { tasks.findOverdue(now) } returns listOf(task)
         every { users.findById(resident.id) } returns resident
+        every { users.findById(senderId) } returns null
 
-        val error = assertThrows(IllegalStateException::class.java) {
-            serviceWithoutSender.evaluateOverdueTasks(now)
-        }
+        assertEquals(0, service.evaluateOverdueTasks(now))
 
-        assertEquals(true, error.message?.contains("TASK_FINE_SENDER_ID"))
         verify(exactly = 0) { fines.applyFine(any()) }
         verify(exactly = 0) { tasks.markFineApplied(any(), any()) }
     }

@@ -1,17 +1,15 @@
 package com.aptasks.model
 
-import jakarta.persistence.*
+import java.math.BigDecimal
+import java.time.LocalDateTime
 import java.util.UUID
 
-@Entity
-@Table(name = "fine")
+/** Multa registrada. `amount` usa BigDecimal porque a coluna é NUMERIC(10, 2). */
 data class Fine(
-    @Id
     val id: UUID = UUID.randomUUID(),
-    var timestamp: String ,
-    var amount: Float,
-    var sender: UUID,
-    var receiver: UUID,
-    @Column(name = "is_paid")
-    var isPaid: Boolean = false
+    val timestamp: LocalDateTime,
+    val amount: BigDecimal,
+    val sender: UUID,
+    val receiver: UUID,
+    val isPaid: Boolean = false
 )

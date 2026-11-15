@@ -1,18 +1,23 @@
 package com.aptasks.controller
 
 import com.aptasks.config.GlobalExceptionHandler
+import com.aptasks.dto.fine.FineResponse
+import com.aptasks.exception.FineNotFoundException
+import com.aptasks.model.Fine
 import com.aptasks.service.FineService
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.runs
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import java.math.BigDecimal
+import java.time.LocalDateTime
 import java.util.UUID
 
 class FineControllerTest {
@@ -28,8 +33,9 @@ class FineControllerTest {
     }
 
     @Test
-    fun `returns success when a fine is accepted by the service`() {
-        every { fineService.applyFine(any()) } just runs
+    fun `creates a fine and returns it in data`() {
+        val fine = storedFine()
+        every { fineService.applyFine(any()) } returns fine
 
         mockMvc.post("/api/fines") {
             contentType = MediaType.APPLICATION_JSON
@@ -38,6 +44,7 @@ class FineControllerTest {
             status { isOk() }
             jsonPath("$.success") { value(true) }
             jsonPath("$.message") { value("Multa aplicada com sucesso! O bolso agradece e a casa também.") }
+            jsonPath("$.data.id") { value(fine.id.toString()) }
         }
 
         verify(exactly = 1) { fineService.applyFine(any()) }
@@ -58,6 +65,77 @@ class FineControllerTest {
 
         verify(exactly = 1) { fineService.applyFine(any()) }
     }
+
+    @Test
+    fun `lists the fines of a resident with a count`() {
+        val userId = UUID.randomUUID()
+        val fine = FineResponse(
+            id = UUID.randomUUID(),
+            timestamp = LocalDateTime.of(2026, 10, 15, 12, 0),
+            amount = BigDecimal("5.00"),
+            senderId = UUID.randomUUID(),
+            senderName = "Casa",
+            receiverId = userId,
+            receiverName = "Bia",
+            isPaid = false,
+            direction = "received"
+        )
+        every { fineService.findForResident(userId) } returns listOf(fine)
+
+        mockMvc.get("/api/fines") { param("userId", userId.toString()) }.andExpect {
+            status { isOk() }
+            jsonPath("$.count") { value(1) }
+            jsonPath("$.data[0].direction") { value("received") }
+            jsonPath("$.data[0].receiverName") { value("Bia") }
+        }
+    }
+
+    @Test
+    fun `listing with a malformed userId is a bad request`() {
+        mockMvc.get("/api/fines") { param("userId", "nao-uuid") }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.error") { value("O identificador do morador é inválido.") }
+        }
+    }
+
+    @Test
+    fun `marks a fine as paid`() {
+        val fine = storedFine(isPaid = true)
+        every { fineService.markPaid(fine.id) } returns fine
+
+        mockMvc.patch("/api/fines/${fine.id}/paid").andExpect {
+            status { isOk() }
+            jsonPath("$.success") { value(true) }
+            jsonPath("$.data.isPaid") { value(true) }
+        }
+    }
+
+    @Test
+    fun `marking an unknown fine returns not found`() {
+        val id = UUID.randomUUID()
+        every { fineService.markPaid(id) } throws FineNotFoundException(id)
+
+        mockMvc.patch("/api/fines/$id/paid").andExpect {
+            status { isNotFound() }
+            jsonPath("$.success") { value(false) }
+        }
+    }
+
+    @Test
+    fun `marking a fine with a malformed id is a bad request`() {
+        mockMvc.patch("/api/fines/nao-uuid/paid").andExpect {
+            status { isBadRequest() }
+        }
+        verify(exactly = 0) { fineService.markPaid(any()) }
+    }
+
+    private fun storedFine(isPaid: Boolean = false) = Fine(
+        timestamp = LocalDateTime.of(2026, 10, 15, 12, 0),
+        amount = BigDecimal("5.00"),
+        sender = UUID.randomUUID(),
+        receiver = UUID.randomUUID(),
+        isPaid = isPaid
+    )
 
     private fun validFineRequest() = """
         {

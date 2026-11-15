@@ -34,6 +34,16 @@ export const updateTask = async (taskId, task) =>
 export const deleteTask = async taskId =>
   unwrap(await api.delete(`/tasks/${encodeURIComponent(taskId)}`));
 
+// Multas: GET /fines?userId=... -> [{ id, timestamp, amount, senderId, senderName, receiverId, receiverName, isPaid, direction: 'sent'|'received' }]
+// POST /fines -> { sender, receiver, amount } (manual, o remetente é o morador logado)
+// PATCH /fines/{id}/paid -> marca a multa como paga.
+export const getFines = async residentId =>
+  unwrap(await api.get('/fines', { params: { userId: residentId } }));
+export const createFine = async ({ sender, receiver, amount }) =>
+  unwrap(await api.post('/fines', { sender, receiver, amount }));
+export const markFinePaid = async fineId =>
+  unwrap(await api.patch(`/fines/${encodeURIComponent(fineId)}/paid`));
+
 const API_URL = 'https://apptasks-e6oh.onrender.com/'; 
 
 export const setStatusTasks = async (Name, Status) => {
