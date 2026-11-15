@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Img from "../imagem/ap103.png";
 import ResidentAvatar from "../components/ResidentAvatar";
+import { FILL_LABELS, getFillLevel } from "../components/TrashBin";
 import "../style/Task.css";
 
 function Task({ loggedUser, resident, tasks = [], trashStatus, loading, onDecision, onPresenceChange }) {
@@ -36,10 +37,10 @@ function Task({ loggedUser, resident, tasks = [], trashStatus, loading, onDecisi
             <span className="presence-switch" />{resident?.isAtHome ? "Estou em casa" : resident?.id ? "Estou fora" : "Conectando…"}
           </button>
         </section>
-        {trashStatus?.isFull && trashStatus?.responsible?.id === resident?.id && (
+        {getFillLevel(trashStatus) !== "EMPTY" && trashStatus?.responsible?.id === resident?.id && (
           <aside className="trash-resident-nudge" role="status">
-            <strong>Cutucada da casa: o lixo está cheio.</strong>
-            <span>Você está marcado como responsável. Quando esvaziar, atualize o status na tela inicial.</span>
+            <strong>Cutucada da casa: a lixeira está {FILL_LABELS[getFillLevel(trashStatus)].toLowerCase()}.</strong>
+            <span>Você está marcado como responsável. Quando retirar o lixo, marque “Já foi esvaziado” na tela inicial.</span>
           </aside>
         )}
         <h2>Suas tarefas desta semana</h2>

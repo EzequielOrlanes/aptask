@@ -2,7 +2,7 @@
 -- Schema do AP Tasks para o PostgreSQL do Supabase.
 -- Execute no SQL Editor do Supabase, em um banco vazio.
 -- Idempotente: pode rodar de novo sem apagar dados.
--- Consolida as migrações V2, V3 e V4 e a tabela fine.
+-- Consolida as migrações V2, V3 e V4, a tabela fine e as tabelas da lixeira.
 -- =============================================================
 
 -- Moradores
@@ -61,6 +61,27 @@ CREATE TABLE IF NOT EXISTS task_rotation_history (
 CREATE INDEX IF NOT EXISTS idx_task_rotation_history_user_week
     ON task_rotation_history (user_id, week_start DESC);
 
+-- Coleta de lixo: uma única linha com o estado atual.
+CREATE TABLE IF NOT EXISTS trash_status (
+    id                   SMALLINT PRIMARY KEY CHECK (id = 1),
+    responsible_user_id  UUID NULL REFERENCES users(id) ON DELETE SET NULL,
+    fill_level           TEXT NOT NULL DEFAULT 'EMPTY' CHECK (fill_level IN ('EMPTY', 'HALF', 'FULL')),
+    reported_at          TIMESTAMPTZ NULL,
+    reported_by_user_id  UUID NULL REFERENCES users(id) ON DELETE SET NULL,
+    updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_trash_report CHECK (fill_level = 'EMPTY' OR reported_at IS NOT NULL)
+);
+INSERT INTO trash_status (id, fill_level) VALUES (1, 'EMPTY') ON CONFLICT (id) DO NOTHING;
+
+-- Histórico append-only das ações da lixeira.
+CREATE TABLE IF NOT EXISTS trash_events (
+    id           UUID PRIMARY KEY,
+    event_type   TEXT NOT NULL CHECK (event_type IN ('RESPONSIBLE_CHANGED', 'REPORTED_HALF', 'REPORTED_FULL', 'MARKED_EMPTIED')),
+    resident_id  UUID NULL REFERENCES users(id) ON DELETE SET NULL,
+    occurred_at  TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_trash_events_occurred_at ON trash_events (occurred_at DESC);
+
 -- Acesso: o backend conecta como postgres, e a API pública do Supabase
 -- (chave publishable) não deve enxergar essas tabelas. Ativar RLS sem
 -- políticas bloqueia o acesso via REST para anon e authenticated.
@@ -69,3 +90,5 @@ ALTER TABLE tasks                  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE fine                   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE task_rotation_runs     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE task_rotation_history  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trash_status           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trash_events           ENABLE ROW LEVEL SECURITY;

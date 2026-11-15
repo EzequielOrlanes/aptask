@@ -5,10 +5,11 @@ import api from './axiosInstance';
 // PATCH /tasks/weekly/{userName}/decision -> { done: boolean }, retorna a tarefa atualizada.
 // GET /residents -> [{ id, name, avatarUrl, isAtHome }]
 // PATCH /residents/{id}/presence -> { isAtHome: boolean }, retorna o morador atualizado.
-// GET /trash/today -> { responsible: Resident|null, isFull, reportedAt, reportedBy }
+// GET /trash/today -> { responsible: Resident|null, fillLevel: 'EMPTY'|'HALF'|'FULL', isFull, reportedAt, reportedBy }
 // PATCH /trash/responsible -> { residentId }, retorna o status atualizado.
-// POST /trash/full -> { reportedByResidentId }, registra o aviso de lixeira cheia.
-// POST /trash/empty -> { updatedByResidentId }, limpa o aviso após a coleta.
+// POST /trash/half -> { reportedByResidentId }, registra que a lixeira está meio cheia.
+// POST /trash/full -> { reportedByResidentId }, registra que a lixeira está cheia.
+// POST /trash/empty -> { updatedByResidentId }, só o responsável; marca a lixeira como vazia.
 // Aceita respostas diretas ou no envelope comum { data: ... }.
 const unwrap = response => response.data?.data ?? response.data;
 
@@ -19,6 +20,8 @@ export const updateResidentPresence = async (residentId, isAtHome) =>
 export const getTrashStatus = async () => unwrap(await api.get('/trash/today'));
 export const assignTrashResponsible = async residentId =>
   unwrap(await api.patch('/trash/responsible', { residentId }));
+export const reportTrashHalf = async reportedByResidentId =>
+  unwrap(await api.post('/trash/half', { reportedByResidentId }));
 export const reportTrashFull = async reportedByResidentId =>
   unwrap(await api.post('/trash/full', { reportedByResidentId }));
 export const reportTrashEmptied = async updatedByResidentId =>
@@ -83,20 +86,3 @@ export const logoutUser = async () => {
     throw error.response.data.error;
   }
 };
-
-export const AvisosSaveToDB = async (avisoData) => {
-  try {
-    const response = await api.post(
-      `${API_URL}/avisos`,
-       avisoData, 
-      {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-    });
-      return response.data;
-    } catch (error) {
-      throw error.response.data.error;
-    }
-
-}; 

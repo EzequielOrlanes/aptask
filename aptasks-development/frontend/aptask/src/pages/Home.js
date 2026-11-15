@@ -2,12 +2,17 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Img from "../imagem/ap103.png";
 import ResidentAvatar from "../components/ResidentAvatar";
+import TrashBin, { FILL_LABELS, getFillLevel } from "../components/TrashBin";
 import AdminTaskPanel from "../components/AdminTaskPanel";
 import "../style/Home.css";
 
-function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStatus, loading, isAdmin, onSaveTask, onDeleteTask, onAdminLogout, onAssignTrash, onReportTrashFull, onReportTrashEmptied }) {
+function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStatus, loading, isAdmin, onSaveTask, onDeleteTask, onAdminLogout, onAssignTrash, onReportTrashHalf, onReportTrashFull, onReportTrashEmptied }) {
   const displayedResidents = residents.length ? residents : residentsFallback;
   const responsible = trashStatus?.responsible;
+  const currentResidentId = residents.find(person => person.name === loggedUser)?.id;
+  const isCurrentResponsible = Boolean(responsible?.id) && responsible.id === currentResidentId;
+  const fillLevel = getFillLevel(trashStatus);
+  const canReport = residents.some(person => person.name === loggedUser);
   const [selectedResponsibleId, setSelectedResponsibleId] = useState("");
   const [trashAction, setTrashAction] = useState("");
   const [trashActionError, setTrashActionError] = useState("");
@@ -95,27 +100,34 @@ function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStat
                 {trashAction === "assign" ? "Salvando…" : "Salvar"}
               </button>
             </div>
-            {trashStatus?.isFull && (
-              <div className="trash-full-notice" role="status">
-                <strong>O lixo está cheio</strong>
-                <span>{responsible?.name ? `${responsible.name} está marcado como responsável.` : "Avise quem está responsável pela coleta."}</span>
-              </div>
-            )}
+            <div className="trash-status-block">
+              <TrashBin level={fillLevel} />
+              <p className="trash-level-line">
+                Lixeira <strong>{FILL_LABELS[fillLevel].toLowerCase()}</strong>
+                {responsible?.name ? ` · responsável: ${responsible.name}` : " · sem responsável"}
+              </p>
+              {fillLevel !== "EMPTY" && (
+                <small className="trash-hint">
+                  {isCurrentResponsible
+                    ? 'Você está responsável. Quando retirar o lixo, marque "Já foi esvaziado".'
+                    : `Só ${responsible?.name || "o responsável"} pode marcar como esvaziada.`}
+                </small>
+              )}
+            </div>
             <div className="trash-controls trash-report-controls">
-              <button type="button" className="trash-full-button" disabled={!residents.some(person => person.name === loggedUser) || trashAction !== "" || trashStatus?.isFull} onClick={() => runTrashAction(() => onReportTrashFull(), "full")}>
-                {trashAction === "full" ? "Enviando aviso…" : "Avisar que está cheio"}
+              <button type="button" className="trash-half-button" disabled={!canReport || trashAction !== "" || fillLevel !== "EMPTY"} onClick={() => runTrashAction(() => onReportTrashHalf(), "half")}>
+                {trashAction === "half" ? "Enviando aviso…" : "Avisar meio cheia"}
               </button>
-              {trashStatus?.isFull && <button type="button" className="trash-empty-button" disabled={trashAction !== ""} onClick={() => runTrashAction(() => onReportTrashEmptied(), "empty")}>
+              <button type="button" className="trash-full-button" disabled={!canReport || trashAction !== "" || fillLevel === "FULL"} onClick={() => runTrashAction(() => onReportTrashFull(), "full")}>
+                {trashAction === "full" ? "Enviando aviso…" : "Avisar cheia"}
+              </button>
+              {fillLevel !== "EMPTY" && isCurrentResponsible && <button type="button" className="trash-empty-button" disabled={trashAction !== ""} onClick={() => runTrashAction(() => onReportTrashEmptied(), "empty")}>
                 {trashAction === "empty" ? "Atualizando…" : "Já foi esvaziado"}
               </button>}
             </div>
             {!loggedUser && <small className="trash-hint">Escolha seu perfil antes de enviar um aviso.</small>}
             {trashActionError && <p className="trash-action-error" role="alert">{trashActionError}</p>}
           </div>
-        </section>
-        <section className="home-section compact-section">
-          <div className="section-heading"><div><p className="eyebrow">RECADO RÁPIDO</p><h2>Avisos da casa</h2></div><span className="notice-icon">✳</span></div>
-          <div className="glass-panel notice-panel"><span className="notice-dot" /><p>Câmeras não estão funcionando.</p></div>
         </section>
       </div>
       <footer className="home-footer">AP103 <span>•</span> Feito para morar melhor</footer>

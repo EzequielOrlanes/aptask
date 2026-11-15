@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Task from "./pages/Task.js";
 import Home from "./pages/Home.js";
 import Login from "./pages/Login.js";
-import { getWeeklyTasks, getResidents, getTrashStatus, updateResidentPresence, submitWeeklyDecision, createTask, updateTask, deleteTask, assignTrashResponsible, reportTrashFull, reportTrashEmptied } from "./services/api";
+import { getWeeklyTasks, getResidents, getTrashStatus, updateResidentPresence, submitWeeklyDecision, createTask, updateTask, deleteTask, assignTrashResponsible, reportTrashHalf, reportTrashFull, reportTrashEmptied } from "./services/api";
 
 const PRESENCE_STORAGE_KEY = "ap103.pending-presence.v1";
 const AUTH_USER_STORAGE_KEY = "ap103.auth-user.v1";
@@ -128,6 +128,10 @@ function App() {
     if (!resident?.id) throw new Error("Escolha seu perfil antes de enviar o aviso.");
     return resident.id;
   };
+  const notifyTrashHalf = async () => {
+    await reportTrashHalf(currentResidentId());
+    await refreshTrashStatus();
+  };
   const notifyTrashFull = async () => {
     await reportTrashFull(currentResidentId());
     await refreshTrashStatus();
@@ -167,7 +171,7 @@ function App() {
   const homeProps = {
     loggedUser, setLoggedUser, tasks: currentTasks, residents, trashStatus, loading, isAdmin,
     onSaveTask: saveTask, onDeleteTask: removeTask, onAdminLogout: leaveAdminSession,
-    onAssignTrash: assignTrash, onReportTrashFull: notifyTrashFull, onReportTrashEmptied: notifyTrashEmptied,
+    onAssignTrash: assignTrash, onReportTrashHalf: notifyTrashHalf, onReportTrashFull: notifyTrashFull, onReportTrashEmptied: notifyTrashEmptied,
   };
 
   return (
