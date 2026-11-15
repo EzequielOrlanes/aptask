@@ -49,7 +49,10 @@ function Task({ loggedUser, resident, tasks = [], trashStatus, loading, onDecisi
             <div className="tarefa-morador"><p>{task.description}</p></div>
             {task.deadline && <p className="task-deadline"><span>Prazo</span><strong>{new Date(task.deadline).toLocaleString("pt-BR", { dateStyle: "medium", timeStyle: "short" })}</strong></p>}
             {task.status === "done" ? (
-              <p className="task-result done">Tarefa marcada como concluída. Obrigado!</p>
+              <>
+                <p className="task-result done">Tarefa marcada como concluída. Obrigado!</p>
+                <div className="task-actions"><button type="button" className="missed-button" disabled={saving} onClick={() => recordDecision({ taskId: task.id, value: false })}>Marcar como não feita</button></div>
+              </>
             ) : task.fineApplied ? (
               <p className="task-result missed">Prazo não cumprido. Multa de {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(task.fineAmount || 0)} registrada.</p>
             ) : task.decisionRecorded ? (
