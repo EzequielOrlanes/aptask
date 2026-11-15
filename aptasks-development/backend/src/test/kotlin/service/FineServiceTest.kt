@@ -178,6 +178,32 @@ class FineServiceTest {
         verify(exactly = 0) { fines.markPaid(any()) }
     }
 
+    @Test
+    fun `lists all fines for the admin`() {
+        val listed = listOf(FineResponse(UUID.randomUUID(), timestamp, BigDecimal("5.00"), sender.id, sender.name, receiver.id, receiver.name, false, "all"))
+        every { fines.findAll() } returns listed
+
+        assertEquals(listed, service.findAll())
+    }
+
+    @Test
+    fun `deletes an existing fine`() {
+        val id = UUID.randomUUID()
+        every { fines.deleteById(id) } returns true
+
+        service.deleteFine(id)
+
+        verify(exactly = 1) { fines.deleteById(id) }
+    }
+
+    @Test
+    fun `deleting a missing fine throws not found`() {
+        val id = UUID.randomUUID()
+        every { fines.deleteById(id) } returns false
+
+        assertThrows<FineNotFoundException> { service.deleteFine(id) }
+    }
+
     private fun request(
         amount: Double = 5.5,
         sender: UUID = this.sender.id,

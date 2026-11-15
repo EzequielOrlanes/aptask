@@ -57,6 +57,20 @@ class FineController(private val fineService: FineService) {
         )
     }
 
+    /** Todas as multas, para o administrador. */
+    @GetMapping("/admin")
+    fun listAllFines(): ResponseEntity<ApiResponse<List<FineResponse>>> {
+        val fines = fineService.findAll()
+        return ResponseEntity.ok(ApiResponse(success = true, data = fines, count = fines.size, timestamp = Instant.now().toString()))
+    }
+
+    /** Remove uma multa (somente administrador, rota protegida pelo AdminAuthInterceptor). */
+    @DeleteMapping("/{id}")
+    fun deleteFine(@PathVariable id: String): ResponseEntity<ApiResponse<Unit>> {
+        fineService.deleteFine(parseUuid(id, "O identificador da multa é inválido."))
+        return ResponseEntity.ok(ApiResponse(success = true, message = "Multa removida.", timestamp = Instant.now().toString()))
+    }
+
     private fun parseUuid(value: String, message: String): UUID =
         runCatching { UUID.fromString(value) }.getOrNull() ?: throw IllegalArgumentException(message)
 }

@@ -4,10 +4,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Task from "./pages/Task.js";
 import Home from "./pages/Home.js";
 import Login from "./pages/Login.js";
-import { getWeeklyTasks, getResidents, getTrashStatus, updateResidentPresence, submitWeeklyDecision, createTask, updateTask, deleteTask, assignTrashResponsible, reportTrashHalf, reportTrashFull, reportTrashEmptied, getFines, createFine, markFinePaid } from "./services/api";
+import { getWeeklyTasks, getResidents, getTrashStatus, updateResidentPresence, submitWeeklyDecision, createTask, updateTask, deleteTask, assignTrashResponsible, reportTrashHalf, reportTrashFull, reportTrashEmptied, getFines, createFine, markFinePaid, getAdminFines, deleteFine } from "./services/api";
+import { ADMIN_TOKEN_KEY, ADMIN_SESSION_EXPIRED_EVENT } from "./services/axiosInstance";
 
 const PRESENCE_STORAGE_KEY = "ap103.pending-presence.v1";
-const AUTH_USER_STORAGE_KEY = "ap103.auth-user.v1";
 
 function readPendingPresence() {
   try {
@@ -23,14 +23,16 @@ function persistPendingPresence(pending) {
   } catch { /* localStorage may be unavailable or full; the in-memory update still works. */ }
 }
 
-function readAuthUser() {
-  try { return JSON.parse(window.localStorage.getItem(AUTH_USER_STORAGE_KEY) || "null"); }
+function readAdminToken() {
+  try { return window.localStorage.getItem(ADMIN_TOKEN_KEY) || null; }
   catch { return null; }
 }
 
 function App() {
   const [loggedUser, setLoggedUser] = useState("");
-  const [authUser, setAuthUser] = useState(readAuthUser);
+  const [adminToken, setAdminToken] = useState(readAdminToken);
+  const [adminFines, setAdminFines] = useState([]);
+  const [adminFinesLoading, setAdminFinesLoading] = useState(false);
   const [weeklyTasks, setWeeklyTasks] = useState([]);
   const [residents, setResidents] = useState([]);
   const [pendingPresence, setPendingPresence] = useState(readPendingPresence);
@@ -169,23 +171,40 @@ function App() {
     await refreshTrashStatus();
   };
 
-  const acceptAuthResponse = authResponse => {
-    const payload = authResponse?.data?.data ?? authResponse?.data ?? authResponse;
-    const user = payload?.user ?? payload?.data?.user ?? null;
-    const accessToken = payload?.access_token ?? payload?.accessToken ?? payload?.data?.access_token;
-    if (accessToken) window.localStorage.setItem("token", accessToken);
-    if (user) {
-      window.localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
-      setAuthUser(user);
-    }
+  // Sessão de administrador: token emitido pelo backend após nome + senha.
+  const acceptAdminToken = token => {
+    try { window.localStorage.setItem(ADMIN_TOKEN_KEY, token); } catch { /* sessão só em memória */ }
+    setAdminToken(token);
   };
-  const leaveAdminSession = () => {
-    window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
-    window.localStorage.removeItem("token");
-    setAuthUser(null);
+  const leaveAdminSession = useCallback(() => {
+    try { window.localStorage.removeItem(ADMIN_TOKEN_KEY); } catch { /* ignore */ }
+    setAdminToken(null);
+    setAdminFines([]);
+  }, []);
+  const isAdmin = Boolean(adminToken);
+
+  useEffect(() => {
+    window.addEventListener(ADMIN_SESSION_EXPIRED_EVENT, leaveAdminSession);
+    return () => window.removeEventListener(ADMIN_SESSION_EXPIRED_EVENT, leaveAdminSession);
+  }, [leaveAdminSession]);
+
+  const refreshAdminFines = useCallback(async () => {
+    setAdminFinesLoading(true);
+    try { setAdminFines(await getAdminFines()); }
+    catch { setError("Não foi possível carregar as multas para o administrador."); }
+    finally { setAdminFinesLoading(false); }
+  }, []);
+  useEffect(() => {
+    if (!isAdmin) return undefined;
+    refreshAdminFines();
+    const interval = window.setInterval(refreshAdminFines, 30000);
+    return () => window.clearInterval(interval);
+  }, [isAdmin, refreshAdminFines]);
+  const removeFine = async fineId => {
+    await deleteFine(fineId);
+    await refreshAdminFines();
+    await refreshFines(fineResidentId);
   };
-  const role = authUser?.app_metadata?.role || authUser?.user_metadata?.role || authUser?.role;
-  const isAdmin = typeof role === "string" && role.toLowerCase() === "admin";
   const saveTask = async (taskId, request) => {
     if (taskId) await updateTask(taskId, request);
     else await createTask(request);
@@ -200,6 +219,7 @@ function App() {
     loggedUser, setLoggedUser, tasks: currentTasks, residents, trashStatus, loading, isAdmin,
     onSaveTask: saveTask, onDeleteTask: removeTask, onAdminLogout: leaveAdminSession,
     onAssignTrash: assignTrash, onReportTrashHalf: notifyTrashHalf, onReportTrashFull: notifyTrashFull, onReportTrashEmptied: notifyTrashEmptied,
+    adminFines, adminFinesLoading, onDeleteFine: removeFine,
   };
 
   return (
@@ -207,7 +227,7 @@ function App() {
       {error && <div className="app-alert" role="alert">{error}<button onClick={refreshTasks}>Tentar novamente</button></div>}
       <Routes>
         <Route path="/" element={<Home {...homeProps} />} />
-        <Route path="/login" element={<Login onAuthenticated={acceptAuthResponse} />} />
+        <Route path="/login" element={<Login onAuthenticated={acceptAdminToken} />} />
         <Route path="/user" element={loggedUser ? <Task loggedUser={loggedUser} resident={currentResident} tasks={residentTasks} trashStatus={trashStatus} loading={loading} onDecision={submitDecision} onPresenceChange={changePresence} fines={fines} finesLoading={finesLoading} residents={residents} onApplyFine={applyManualFine} onMarkFinePaid={payFine} /> : <Navigate to="/" />} />
         <Route path="/home" element={<Home {...homeProps} />} />
       </Routes>

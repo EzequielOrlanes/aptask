@@ -96,3 +96,13 @@ export const logoutUser = async () => {
     throw error.response.data.error;
   }
 };
+
+// Administrador: login pelo e-mail do morador Ezequiel (conferido no backend).
+// POST /auth/admin/login -> { token, expiresAt }
+export const loginAdmin = async email =>
+  unwrap(await api.post('/auth/admin/login', { email }));
+// GET /fines/admin -> todas as multas (rota administrativa)
+export const getAdminFines = async () => unwrap(await api.get('/fines/admin'));
+// DELETE /fines/{id} -> remove a multa (rota administrativa)
+export const deleteFine = async fineId =>
+  unwrap(await api.delete(`/fines/${encodeURIComponent(fineId)}`));

@@ -18,6 +18,18 @@ class UserRepository(private val jdbcTemplate: JdbcTemplate) {
         )
     }
 
+    /** Morador pelo nome (sem diferenciar maiúsculas). */
+    fun findByName(name: String): User? = jdbcTemplate.query(
+        """
+        SELECT id, name, email, is_at_home, homework_is_done
+        FROM users
+        WHERE lower(name) = lower(?)
+        LIMIT 1
+        """.trimIndent(),
+        userRowMapper,
+        name
+    ).firstOrNull()
+
     fun findById(id: UUID): User? = jdbcTemplate.query(
         """
         SELECT id, name, email, is_at_home, homework_is_done

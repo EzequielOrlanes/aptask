@@ -1,140 +1,64 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Link } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom";
 import Img from "../imagem/ap103.png";
 import '../style/Login.css';
+import { loginAdmin } from '../services/api';
 
-
-import { loginUser, registerUser } from '../services/api';
-
+// Acesso restrito ao administrador: o e-mail do morador Ezequiel, conferido pelo backend.
 const Login = ({ onAuthenticated }) => {
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
+        setSubmitting(true);
         try {
-            const response = await loginUser(email, password);
-            onAuthenticated?.(response);
+            const session = await loginAdmin(email.trim());
+            onAuthenticated?.(session.token);
             navigate('/home');
-        } catch (error) {
-            setError(error.message || 'Erro ao fazer login');
-        }
-    };
-
-    const handleRegister = async (e) => {
-        e.preventDefault();
-        setError('');
-        try {
-            const response = await registerUser(email, password);
-            onAuthenticated?.(response);
-            navigate('/home');
-        } catch (error) {
-            setError(error.message || 'Erro ao criar conta');
+        } catch (err) {
+            setError(err?.response?.data?.error || 'Não foi possível entrar. Tente novamente.');
+        } finally {
+            setSubmitting(false);
         }
     };
 
     return (
         <div style={styles.container}>
-          <div className="logo"> <Link to="/"> <img src={Img} alt="logo da página" /> </Link></div>
-            <h2>Login / Criar Conta </h2>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            <form style={styles.form}>
+            <div className="logo"><Link to="/"><img src={Img} alt="logo da página" /></Link></div>
+            <h2>Acesso do administrador</h2>
+            {error && <p role="alert" style={{ color: 'red' }}>{error}</p>}
+            <form style={styles.form} onSubmit={handleLogin}>
                 <div style={styles.inputGroup}>
-                    <label htmlFor="email">Email:</label>
+                    <label htmlFor="admin-email">Email:</label>
                     <input
                         type="email"
-                        id="email"
+                        id="admin-email"
+                        autoComplete="username"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
                         style={styles.input}
                     />
                 </div>
-                <div style={styles.inputGroup}>
-                    <label htmlFor="password">Password:</label>
-                    <input
-                        type="password"
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        style={styles.input}
-                    />
-                </div>
-                <div style={styles.buttonGroup}>
-                    <button 
-                        type="button" 
-                        style={styles.primaryButton}
-                        onClick={handleLogin}
-                    >
-                        Login
-                    </button>
-                    <button 
-                        type="button"
-                        style={styles.secondaryButton}
-                        onClick={handleRegister}
-                    >
-                        Criar Conta
-                    </button>
-                </div>
+                <button type="submit" disabled={submitting} style={styles.button}>
+                    {submitting ? 'Entrando…' : 'Entrar'}
+                </button>
             </form>
+            <p style={{ textAlign: 'center' }}><Link to="/home">Voltar ao início</Link></p>
         </div>
     );
 };
 
 const styles = {
-    container: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh'
-    },
-    form: {
-        display: 'flex',
-        flexDirection: 'column',
-        width: '300px',
-        padding: '20px',
-        border: '1px solid #ccc',
-        borderRadius: '5px',
-        backgroundColor: '#fff',
-    },
-    inputGroup: {
-        marginBottom: '15px',
-    },
-    input: {
-        width: '100%',
-        padding: '10px',
-        marginTop: '5px',
-        border: '1px solid #ccc',
-        borderRadius: '5px',
-    },
-    buttonGroup: {
-        display: 'flex',
-        gap: '10px',
-    },
-    primaryButton: {
-        flex: 1,
-        padding: '10px',
-        backgroundColor: '#007BFF',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '5px',
-        cursor: 'pointer',
-    },
-    secondaryButton: {
-        flex: 1,
-        padding: '10px',
-        backgroundColor: '#6c757d',
-        color: 'white',
-        border: 'none',
-        borderRadius: '5px',
-        cursor: 'pointer',
-    }
+    container: { maxWidth: 360, margin: '48px auto', padding: 24, fontFamily: 'sans-serif' },
+    form: { display: 'flex', flexDirection: 'column', gap: 12 },
+    inputGroup: { display: 'flex', flexDirection: 'column', gap: 4 },
+    input: { padding: 8, fontSize: 14 },
+    button: { padding: 10, fontSize: 14, cursor: 'pointer' },
 };
 
 export default Login;

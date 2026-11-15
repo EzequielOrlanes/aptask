@@ -5,8 +5,8 @@ import com.aptasks.model.Fine
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.stereotype.Repository
+import java.sql.ResultSet
 import java.sql.Timestamp
-import java.time.LocalDateTime
 import java.util.UUID
 
 /** Persistência de multas com SQL declarado explicitamente. */
@@ -42,36 +42,46 @@ class FineRepository(private val jdbcTemplate: JdbcTemplate) {
     /** Multas em que o morador é remetente ou destinatário, mais recentes primeiro. */
     fun findByResident(userId: UUID): List<FineResponse> = jdbcTemplate.query(
         """
-        SELECT f.id, f.timestamp, f.amount, f.sender, s.name AS sender_name,
-               f.receiver, r.name AS receiver_name, f.is_paid
-        FROM fine f
-        JOIN users s ON s.id = f.sender
-        JOIN users r ON r.id = f.receiver
+        $SELECT_WITH_NAMES
         WHERE f.sender = ? OR f.receiver = ?
         ORDER BY f.timestamp DESC, f.id
         """.trimIndent(),
-        { resultSet, _ ->
-            val senderId = resultSet.getObject("sender", UUID::class.java)
-            val receiverId = resultSet.getObject("receiver", UUID::class.java)
-            FineResponse(
-                id = resultSet.getObject("id", UUID::class.java),
-                timestamp = resultSet.getTimestamp("timestamp").toLocalDateTime(),
-                amount = resultSet.getBigDecimal("amount"),
-                senderId = senderId,
-                senderName = resultSet.getString("sender_name"),
-                receiverId = receiverId,
-                receiverName = resultSet.getString("receiver_name"),
-                isPaid = resultSet.getBoolean("is_paid"),
-                direction = if (senderId == userId) "sent" else "received"
-            )
-        },
+        { resultSet, _ -> mapFineResponse(resultSet, direction = directionFor(resultSet, userId)) },
         userId,
         userId
     )
 
+    /** Todas as multas, para a área administrativa. `direction` vem como "all". */
+    fun findAll(): List<FineResponse> = jdbcTemplate.query(
+        """
+        $SELECT_WITH_NAMES
+        ORDER BY f.timestamp DESC, f.id
+        """.trimIndent(),
+        { resultSet, _ -> mapFineResponse(resultSet, direction = "all") }
+    )
+
+    /** Remove a multa. Retorna false se ela não existe. */
+    fun deleteById(id: UUID): Boolean =
+        jdbcTemplate.update("DELETE FROM fine WHERE id = ?", id) > 0
+
     /** Marca a multa como paga. Retorna false se a multa não existe. */
     fun markPaid(id: UUID): Boolean =
         jdbcTemplate.update("UPDATE fine SET is_paid = TRUE WHERE id = ?", id) > 0
+
+    private fun directionFor(resultSet: ResultSet, userId: UUID): String =
+        if (resultSet.getObject("sender", UUID::class.java) == userId) "sent" else "received"
+
+    private fun mapFineResponse(resultSet: ResultSet, direction: String): FineResponse = FineResponse(
+        id = resultSet.getObject("id", UUID::class.java),
+        timestamp = resultSet.getTimestamp("timestamp").toLocalDateTime(),
+        amount = resultSet.getBigDecimal("amount"),
+        senderId = resultSet.getObject("sender", UUID::class.java),
+        senderName = resultSet.getString("sender_name"),
+        receiverId = resultSet.getObject("receiver", UUID::class.java),
+        receiverName = resultSet.getString("receiver_name"),
+        isPaid = resultSet.getBoolean("is_paid"),
+        direction = direction
+    )
 
     private val fineRowMapper = RowMapper { resultSet, _ ->
         Fine(
@@ -82,5 +92,15 @@ class FineRepository(private val jdbcTemplate: JdbcTemplate) {
             receiver = resultSet.getObject("receiver", UUID::class.java),
             isPaid = resultSet.getBoolean("is_paid")
         )
+    }
+
+    private companion object {
+        const val SELECT_WITH_NAMES = """
+            SELECT f.id, f.timestamp, f.amount, f.sender, s.name AS sender_name,
+                   f.receiver, r.name AS receiver_name, f.is_paid
+            FROM fine f
+            JOIN users s ON s.id = f.sender
+            JOIN users r ON r.id = f.receiver
+        """
     }
 }

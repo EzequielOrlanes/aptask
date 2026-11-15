@@ -6,12 +6,15 @@ import com.aptasks.exception.FineNotFoundException
 import com.aptasks.model.Fine
 import com.aptasks.service.FineService
 import io.mockk.every
+import io.mockk.just
+import io.mockk.runs
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
@@ -136,6 +139,38 @@ class FineControllerTest {
         receiver = UUID.randomUUID(),
         isPaid = isPaid
     )
+
+    @Test
+    fun `lists every fine for the admin`() {
+        every { fineService.findAll() } returns emptyList()
+
+        mockMvc.get("/fines/admin").andExpect {
+            status { isOk() }
+            jsonPath("$.count") { value(0) }
+        }
+    }
+
+    @Test
+    fun `deletes a fine`() {
+        val id = UUID.randomUUID()
+        every { fineService.deleteFine(id) } just runs
+
+        mockMvc.delete("/fines/$id").andExpect {
+            status { isOk() }
+            jsonPath("$.success") { value(true) }
+        }
+        verify(exactly = 1) { fineService.deleteFine(id) }
+    }
+
+    @Test
+    fun `deleting an unknown fine returns not found`() {
+        val id = UUID.randomUUID()
+        every { fineService.deleteFine(id) } throws FineNotFoundException(id)
+
+        mockMvc.delete("/fines/$id").andExpect {
+            status { isNotFound() }
+        }
+    }
 
     private fun validFineRequest() = """
         {

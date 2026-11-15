@@ -54,6 +54,15 @@ class FineService(
         return fineRepository.findByResident(userId)
     }
 
+    /** Todas as multas (área administrativa). */
+    fun findAll(): List<FineResponse> = fineRepository.findAll()
+
+    /** Remove uma multa. Lança [FineNotFoundException] se ela não existe. */
+    @Transactional
+    fun deleteFine(id: UUID) {
+        if (!fineRepository.deleteById(id)) throw FineNotFoundException(id)
+    }
+
     /** Marca a multa como paga. Chamar de novo em uma multa já paga não tem efeito. */
     @Transactional
     fun markPaid(id: UUID): Fine {

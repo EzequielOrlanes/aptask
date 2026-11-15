@@ -4,9 +4,10 @@ import Img from "../imagem/ap103.png";
 import ResidentAvatar from "../components/ResidentAvatar";
 import TrashBin, { FILL_LABELS, getFillLevel } from "../components/TrashBin";
 import AdminTaskPanel from "../components/AdminTaskPanel";
+import AdminFinesPanel from "../components/AdminFinesPanel";
 import "../style/Home.css";
 
-function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStatus, loading, isAdmin, onSaveTask, onDeleteTask, onAdminLogout, onAssignTrash, onReportTrashHalf, onReportTrashFull, onReportTrashEmptied }) {
+function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStatus, loading, isAdmin, onSaveTask, onDeleteTask, onAdminLogout, onAssignTrash, onReportTrashHalf, onReportTrashFull, onReportTrashEmptied, adminFines = [], adminFinesLoading = false, onDeleteFine }) {
   const displayedResidents = residents.length ? residents : residentsFallback;
   const responsible = trashStatus?.responsible;
   const currentResidentId = residents.find(person => person.name === loggedUser)?.id;
@@ -83,6 +84,7 @@ function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStat
       </section>
 
       {isAdmin && <section className="home-section admin-section"><AdminTaskPanel tasks={tasks} residents={residents} onSave={onSaveTask} onDelete={onDeleteTask} /></section>}
+      {isAdmin && <section className="home-section admin-section"><AdminFinesPanel fines={adminFines} loading={adminFinesLoading} onDelete={onDeleteFine} /></section>}
 
       <div className="home-bottom-grid">
         <section className="home-section compact-section">
