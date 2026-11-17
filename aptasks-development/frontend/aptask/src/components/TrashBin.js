@@ -31,6 +31,31 @@ function crumpledTop() {
 }
 const CRUMPLED_TOP = crumpledTop();
 
+// Moscas: posição (x, y) no viewBox e atraso da animação. Meio cheia usa as 3 primeiras; cheia, as 7.
+const FLIES = [
+  [96, 28, 0],
+  [14, 70, 0.6],
+  [106, 98, 1.1],
+  [18, 120, 0.4],
+  [102, 58, 1.6],
+  [6, 40, 0.9],
+  [66, 6, 1.3],
+];
+const FLY_COUNT = { EMPTY: 0, HALF: 3, FULL: 7 };
+
+function Flies({ count }) {
+  return FLIES.slice(0, count).map(([x, y, delay], index) => (
+    <g key={index} transform={`translate(${x} ${y})`}>
+      <g className="trash-fly" style={{ animationDelay: `${delay}s` }}>
+        <ellipse className="trash-fly__wing" cx="-2.6" cy="-2" rx="2.4" ry="1.3" />
+        <ellipse className="trash-fly__wing trash-fly__wing--right" cx="2.6" cy="-2" rx="2.4" ry="1.3" />
+        <ellipse className="trash-fly__body" cx="0" cy="0" rx="2.2" ry="1.6" />
+        <circle className="trash-fly__head" cx="2.2" cy="-0.4" r="1" />
+      </g>
+    </g>
+  ));
+}
+
 function TrashBin({ level = "EMPTY" }) {
   const percent = FILL_PERCENT[level] ?? 0;
   // O conteúdo sobe de forma contínua: 0% fica abaixo do corpo, 100% preenche tudo.
@@ -66,6 +91,9 @@ function TrashBin({ level = "EMPTY" }) {
         <rect className="trash-bin__rim" x="16" y="34" width="88" height="6" rx="3" />
         <rect className="trash-bin__lid" x="12" y="24" width="96" height="12" rx="6" />
         <rect className="trash-bin__knob" x="50" y="14" width="20" height="10" rx="5" />
+
+        {/* Moscas voando em volta da lixeira */}
+        <Flies count={FLY_COUNT[level] ?? 0} />
       </svg>
       <figcaption>{FILL_LABELS[level]}</figcaption>
     </figure>

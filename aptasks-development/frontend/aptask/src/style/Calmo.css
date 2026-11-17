@@ -454,6 +454,52 @@ body {
   }
 }
 
+/* Moscas: voam em trajetórias irregulares, com asas batendo */
+.trash-fly {
+  animation: trash-fly-path 2.8s ease-in-out infinite;
+}
+
+.trash-fly__body {
+  fill: #3b3f44;
+}
+
+.trash-fly__head {
+  fill: #3b3f44;
+}
+
+.trash-fly__wing {
+  fill: rgba(255, 255, 255, 0.75);
+  stroke: rgba(91, 97, 104, 0.45);
+  stroke-width: 0.5;
+  transform-box: fill-box;
+  transform-origin: right center;
+  animation: trash-fly-wing 0.12s linear infinite alternate;
+}
+
+.trash-fly__wing--right {
+  transform-origin: left center;
+  animation-delay: 0.06s;
+}
+
+@keyframes trash-fly-path {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(6px, -5px); }
+  50% { transform: translate(-4px, -9px); }
+  75% { transform: translate(-7px, 2px); }
+}
+
+@keyframes trash-fly-wing {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(0.35); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trash-fly,
+  .trash-fly__wing {
+    animation: none;
+  }
+}
+
 /* Interação leve ao passar o mouse */
 .avatar-gaze {
   transition: transform .12s ease-out;
