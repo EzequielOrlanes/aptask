@@ -64,7 +64,9 @@ function TrashBin({ level = "EMPTY" }) {
 
         {/* Líquido dentro do corpo, com ondas na superfície */}
         <g clipPath="url(#trash-bin-body)">
-          <g className="trash-bin__liquid" style={{ transform: `translateY(${offset}px)` }}>
+          <rect className="trash-bin__interior" x="0" y={BODY_TOP} width="120" height={BODY_HEIGHT + 10} />
+          {/* transform por atributo: o Chrome ignora transform por CSS dentro de um clip-path */}
+          <g className="trash-bin__liquid" transform={`translate(0 ${offset})`}>
             <rect className="trash-bin__fill" x="0" y={BODY_TOP} width="120" height={BODY_HEIGHT + 10} />
             <path className="trash-bin__wave" d="M-30 40 Q-15 30 0 40 T30 40 T60 40 T90 40 T120 40 T150 40 V150 H-30 Z" />
           </g>

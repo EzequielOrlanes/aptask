@@ -387,11 +387,16 @@ body {
   font-weight: 500;
 }
 
+/* Contorno sem preenchimento: o interior fica visível para mostrar o nível */
 .trash-bin__outline {
-  fill: #f7f5f1;
+  fill: none;
   stroke: #5b6168;
   stroke-width: 2.4;
   stroke-linejoin: round;
+}
+
+.trash-bin__interior {
+  fill: rgba(255, 255, 255, 0.6);
 }
 
 .trash-bin__ribs path {
