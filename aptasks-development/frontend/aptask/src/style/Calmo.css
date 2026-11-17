@@ -9,7 +9,7 @@
   --calm-bg: #f5f3ee;
   --calm-surface: #ffffff;
   --calm-ink: #2d2f33;
-  --calm-muted: #7d8189;
+  --calm-muted: #565c65;
   --calm-line: rgba(45, 47, 51, 0.08);
   --calm-sun: #f7d46a;
   --calm-teal: #3cc7b6;
@@ -115,14 +115,47 @@ body {
 .resident-avatar {
   border: 0;
   border-radius: 16px;
-  color: var(--calm-ink);
-  background: #fbeec0;
-  font-weight: 600;
+  background: #f1efe9;
+  overflow: hidden;
 }
 
-.avatar-2 { background: #cfeee9; }
-.avatar-3 { background: #dcdaf8; }
-.avatar-4 { background: #fbd9c6; }
+.avatar-2,
+.avatar-3,
+.avatar-4 {
+  background: #f1efe9;
+}
+
+/* Figuras animadas: respiração suave e piscar ocasional */
+.avatar-figure {
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: avatar-breathe 3.6s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+.avatar-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: avatar-blink 5s infinite;
+}
+
+@keyframes avatar-breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-1.5px) scale(1.02); }
+}
+
+@keyframes avatar-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-figure,
+  .avatar-eye {
+    animation: none;
+  }
+}
 
 .resident-arrow {
   color: var(--calm-muted);
@@ -184,7 +217,7 @@ body {
 }
 
 .task-status.pending {
-  --tint: 125, 129, 137;
+  --tint: 86, 92, 101;
   color: var(--calm-muted);
 }
 
