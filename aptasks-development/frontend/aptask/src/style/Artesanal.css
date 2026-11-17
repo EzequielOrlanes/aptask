@@ -278,6 +278,46 @@ body {
   color: var(--chalk-soft);
 }
 
+/* Badges em pílula: fundo tingido, texto colorido e brilho embaixo, inspirados na referência */
+.task-status,
+.glass-badge,
+.eligible-list > span {
+  --tint: 255, 255, 255;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 13px;
+  border: 1px solid rgba(var(--tint), 0.35);
+  border-radius: 999px;
+  color: rgb(var(--tint));
+  background: linear-gradient(145deg, rgba(var(--tint), 0.28), rgba(var(--tint), 0.08));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 4px 0 rgba(var(--tint), 0.18),
+    0 8px 18px rgba(var(--tint), 0.22);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .01em;
+  text-transform: lowercase;
+  white-space: nowrap;
+  backdrop-filter: none;
+}
+
+.task-status.pending {
+  --tint: 190, 196, 204;
+  color: rgb(var(--tint));
+}
+
+.task-status.done {
+  --tint: 80, 220, 140;
+  color: rgb(var(--tint));
+  border: 1px solid rgba(var(--tint), 0.45);
+}
+
+.glass-badge {
+  --tint: 200, 205, 212;
+}
+
 @media (max-width: 480px) {
   .task-row {
     padding: 10px 14px;
