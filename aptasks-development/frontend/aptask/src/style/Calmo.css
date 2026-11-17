@@ -326,6 +326,44 @@ body {
   color: var(--calm-teal);
 }
 
+/* Botões da lixeira: texto sempre legível, inclusive desabilitado */
+.trash-controls button,
+.trash-controls .trash-full-button,
+.trash-controls .trash-empty-button,
+.trash-controls .trash-half-button {
+  border: 0;
+  border-radius: 14px;
+  color: var(--calm-ink);
+  background: var(--calm-surface);
+  box-shadow: var(--calm-shadow);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 1;
+}
+
+.trash-controls .trash-full-button {
+  color: #a3332c;
+  background: #fdecea;
+}
+
+.trash-controls button:disabled,
+.trash-controls .trash-full-button:disabled {
+  color: #7d838b;
+  background: #efece6;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* Textos de status da lixeira: contraste suficiente sobre o fundo claro */
+.trash-empty,
+.trash-responsible strong,
+.eligible-list > small,
+.trash-panel small {
+  color: var(--calm-muted) !important;
+}
+
 /* Interação leve ao passar o mouse */
 .avatar-gaze {
   transition: transform .12s ease-out;
