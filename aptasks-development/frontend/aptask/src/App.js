@@ -6,6 +6,8 @@ import Home from "./pages/Home.js";
 import Login from "./pages/Login.js";
 import { getWeeklyTasks, getResidents, getTrashStatus, updateResidentPresence, submitWeeklyDecision, createTask, updateTask, deleteTask, assignTrashResponsible, reportTrashHalf, reportTrashFull, reportTrashEmptied, getFines, createFine, markFinePaid, getAdminFines, deleteFine } from "./services/api";
 import { ADMIN_TOKEN_KEY, ADMIN_SESSION_EXPIRED_EVENT } from "./services/axiosInstance";
+// Tema calmo e claro, carregado por último para valer em todas as telas.
+import "./style/Calmo.css";
 
 const PRESENCE_STORAGE_KEY = "ap103.pending-presence.v1";
 

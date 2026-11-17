@@ -6,7 +6,6 @@ import TrashBin, { FILL_LABELS, getFillLevel } from "../components/TrashBin";
 import AdminTaskPanel from "../components/AdminTaskPanel";
 import AdminFinesPanel from "../components/AdminFinesPanel";
 import "../style/Home.css";
-import "../style/Calmo.css"; // Tema calmo e claro: troque por Artesanal.css para voltar ao tema escuro artesanal.
 
 function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStatus, loading, isAdmin, onSaveTask, onDeleteTask, onAdminLogout, onAssignTrash, onReportTrashHalf, onReportTrashFull, onReportTrashEmptied, adminFines = [], adminFinesLoading = false, onDeleteFine }) {
   const displayedResidents = residents.length ? residents : residentsFallback;
