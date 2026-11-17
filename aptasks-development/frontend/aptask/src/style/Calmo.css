@@ -526,6 +526,65 @@ body {
   }
 }
 
+/* Lixeira com líquido verde radioativo: sobe com ondas na superfície e brilha */
+.trash-bin__liquid {
+  transition: transform 0.9s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+.trash-bin__fill,
+.trash-bin__wave {
+  fill: transparent;
+  transition: fill 0.6s ease;
+}
+
+.trash-bin--half .trash-bin__fill {
+  fill: rgba(57, 255, 20, 0.42);
+}
+
+.trash-bin--half .trash-bin__wave {
+  fill: rgba(120, 255, 80, 0.85);
+  animation: trash-wave-slide 3.2s linear infinite;
+}
+
+.trash-bin--half .trash-bin__liquid {
+  filter: drop-shadow(0 0 4px rgba(57, 255, 20, 0.55));
+}
+
+.trash-bin--full .trash-bin__fill {
+  fill: rgba(57, 255, 20, 0.62);
+}
+
+.trash-bin--full .trash-bin__wave {
+  fill: #39ff14;
+  animation: trash-wave-slide 1.8s linear infinite;
+}
+
+.trash-bin--full .trash-bin__liquid {
+  animation: trash-radioactive-glow 2s ease-in-out infinite;
+}
+
+.trash-bin--full .trash-bin__outline {
+  stroke: #39ff14;
+}
+
+@keyframes trash-wave-slide {
+  from { transform: translateX(0); }
+  to { transform: translateX(30px); }
+}
+
+@keyframes trash-radioactive-glow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(57, 255, 20, 0.5)); }
+  50% { filter: drop-shadow(0 0 12px rgba(57, 255, 20, 0.9)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trash-bin--half .trash-bin__wave,
+  .trash-bin--full .trash-bin__wave,
+  .trash-bin--full .trash-bin__liquid {
+    animation: none;
+  }
+}
+
 /* Interação leve ao passar o mouse */
 .avatar-gaze {
   transition: transform .12s ease-out;
