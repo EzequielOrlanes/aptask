@@ -1,0 +1,286 @@
+/*
+ * Tema calmo e organizado: fundo off-white quente, cartões brancos com sombra suave,
+ * títulos em serifa e acentos pastel. Inspirado na referência de app de meditação.
+ * Carregado depois de Home.css. Para voltar, troque o import em pages/Home.js.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap');
+
+:root {
+  --calm-bg: #f5f3ee;
+  --calm-surface: #ffffff;
+  --calm-ink: #2d2f33;
+  --calm-muted: #7d8189;
+  --calm-line: rgba(45, 47, 51, 0.08);
+  --calm-sun: #f7d46a;
+  --calm-teal: #3cc7b6;
+  --calm-coral: #f4a06b;
+  --calm-lavender: #b9b4f2;
+  --calm-radius: 22px;
+  --calm-shadow: 0 10px 30px rgba(70, 60, 40, 0.07), 0 2px 6px rgba(70, 60, 40, 0.04);
+}
+
+body {
+  color: var(--calm-ink);
+  background: var(--calm-bg);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+}
+
+.home-page {
+  --line: var(--calm-line);
+  --muted: var(--calm-muted);
+  --accent: var(--calm-teal);
+  color: var(--calm-ink);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.home-page::before {
+  background:
+    radial-gradient(ellipse at 10% 0%, rgba(247, 212, 106, 0.22), transparent 45%),
+    radial-gradient(ellipse at 95% 90%, rgba(185, 180, 242, 0.14), transparent 45%),
+    var(--calm-bg);
+}
+
+/* Cabeçalho */
+.brand-lockup span,
+.eyebrow,
+.home-hero .eyebrow,
+.section-heading .eyebrow {
+  color: var(--calm-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .14em;
+}
+
+.brand-lockup img {
+  filter: none;
+}
+
+.home-hero h1,
+.section-heading h2 {
+  color: var(--calm-ink);
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  letter-spacing: -.01em;
+}
+
+.section-heading h2 {
+  font-size: 28px;
+}
+
+.home-hero h1 {
+  font-size: clamp(34px, 5vw, 52px);
+}
+
+.hero-copy {
+  color: var(--calm-muted);
+}
+
+.header-indicator,
+.glass-badge,
+.trash-chips button {
+  border: 1px solid var(--calm-line);
+  border-radius: 999px;
+  color: var(--calm-ink);
+  background: var(--calm-surface);
+  box-shadow: var(--calm-shadow);
+  font-size: 13px;
+}
+
+.header-indicator i {
+  background: var(--calm-teal);
+  box-shadow: 0 0 0 4px rgba(60, 199, 182, 0.18);
+}
+
+/* Superfícies: cartões, lista e painéis */
+.resident-card,
+.glass-panel,
+.trash-panel,
+.task-list {
+  border: 1px solid var(--calm-line);
+  border-radius: var(--calm-radius);
+  background: var(--calm-surface);
+  box-shadow: var(--calm-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.resident-card:hover,
+.resident-card.is-selected {
+  border-color: rgba(60, 199, 182, 0.35);
+  box-shadow: 0 14px 34px rgba(70, 60, 40, 0.1);
+  transform: translateY(-2px);
+}
+
+.resident-avatar {
+  border: 0;
+  border-radius: 16px;
+  color: var(--calm-ink);
+  background: #fbeec0;
+  font-weight: 600;
+}
+
+.avatar-2 { background: #cfeee9; }
+.avatar-3 { background: #dcdaf8; }
+.avatar-4 { background: #fbd9c6; }
+
+.resident-arrow {
+  color: var(--calm-muted);
+}
+
+.resident-copy strong,
+.task-row-copy strong {
+  color: var(--calm-ink);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.resident-copy small,
+.task-row-copy small,
+.empty-state,
+.trash-panel > p,
+.home-footer {
+  color: var(--calm-muted);
+  font-size: 13px;
+}
+
+.task-row {
+  min-height: 70px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--calm-line);
+}
+
+/* Caixa de marcar */
+.task-check {
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid rgba(45, 47, 51, 0.22);
+  border-radius: 8px;
+  color: #fff;
+  background: var(--calm-surface);
+}
+
+.task-check.is-done {
+  border-color: var(--calm-teal);
+  background: var(--calm-teal);
+}
+
+/* Badges: pílulas claras com tom pastel */
+.task-status,
+.glass-badge,
+.eligible-list > span {
+  --tint: 45, 47, 51;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 999px;
+  color: rgb(var(--tint));
+  background: rgba(var(--tint), 0.08);
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.task-status.pending {
+  --tint: 125, 129, 137;
+  color: var(--calm-muted);
+}
+
+.task-status.done {
+  --tint: 60, 199, 182;
+  color: #1f7d72;
+  background: rgba(60, 199, 182, 0.16);
+}
+
+/* Lixo e chips */
+.trash-icon {
+  border: 0;
+  border-radius: 12px;
+  color: var(--calm-ink);
+  background: #fbeec0;
+}
+
+.trash-chips button {
+  padding: 8px 14px;
+}
+
+.trash-chips button.active,
+.trash-chips button:hover {
+  color: var(--calm-ink);
+  background: #fbeec0;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.eligible-list > span {
+  background: #f1efe9;
+}
+
+/* Botões */
+.home-page button,
+.admin-session-button {
+  border: 0;
+  border-radius: 14px;
+  color: var(--calm-ink);
+  background: var(--calm-surface);
+  box-shadow: var(--calm-shadow);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.home-page button:hover,
+.admin-session-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(70, 60, 40, 0.12);
+}
+
+.home-page button[type="submit"],
+.home-page .primary-button {
+  color: #fff;
+  background: var(--calm-teal);
+  box-shadow: 0 8px 20px rgba(60, 199, 182, 0.3);
+}
+
+/* Campos */
+.home-page input,
+.home-page select,
+.home-page textarea {
+  border: 1px solid var(--calm-line);
+  border-radius: 14px;
+  color: var(--calm-ink);
+  background: var(--calm-surface);
+  box-shadow: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  padding: 10px 14px;
+}
+
+.home-page input:focus,
+.home-page select:focus,
+.home-page textarea:focus {
+  outline: none;
+  border-color: var(--calm-teal);
+  box-shadow: 0 0 0 3px rgba(60, 199, 182, 0.18);
+}
+
+.home-footer span {
+  color: var(--calm-teal);
+}
+
+@media (max-width: 480px) {
+  .resident-card,
+  .glass-panel,
+  .trash-panel,
+  .task-list {
+    border-radius: 18px;
+  }
+
+  .section-heading h2 {
+    font-size: 24px;
+  }
+}
