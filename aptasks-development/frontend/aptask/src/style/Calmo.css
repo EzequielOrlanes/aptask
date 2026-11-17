@@ -590,6 +590,55 @@ body {
   }
 }
 
+/* Frutas boiando no líquido */
+.trash-fruit {
+  animation: trash-fruit-bob 3.2s ease-in-out infinite;
+}
+
+@keyframes trash-fruit-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2.5px); }
+}
+
+/* Tampa abre quando cheia: dobradiça à esquerda */
+.trash-bin__lidgroup {
+  transform-box: view-box;
+  transform-origin: 12px 30px;
+  transition: transform 0.7s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+.trash-bin--full .trash-bin__lidgroup {
+  transform: rotate(-38deg);
+}
+
+/* Pedaços caindo para fora pela borda quando cheia */
+.trash-spill {
+  animation: trash-spill-fall 3.6s ease-in infinite;
+  opacity: 0;
+}
+
+@keyframes trash-spill-fall {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  12% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(28px, 124px) rotate(220deg); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trash-fruit,
+  .trash-spill {
+    animation: none;
+  }
+
+  .trash-spill {
+    opacity: 0;
+  }
+
+  .trash-bin__lidgroup {
+    transition: none;
+  }
+}
+
 /* Interação leve ao passar o mouse */
 .avatar-gaze {
   transition: transform .12s ease-out;
