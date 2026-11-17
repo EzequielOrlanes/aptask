@@ -86,7 +86,7 @@ function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStat
 
       <div className="home-bottom-grid">
         <section className="home-section compact-section">
-          <div className="section-heading"><div><p className="eyebrow">ACOMPANHAMENTO DO LIXO</p><h2>Coleta de lixo</h2></div><span className="trash-icon">⌁</span></div>
+          <div className="section-heading"><div><p className="eyebrow">ACOMPANHAMENTO DO LIXO</p><h2>Coleta de lixo</h2></div><span className="trash-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6 7l1 12.5h10L18 7M10 11v5M14 11v5" /></svg></span></div>
           <div className="glass-panel trash-panel">
             <p>Quem está com o lixo?</p>
             {responsible && <div className="trash-responsible"><ResidentAvatar resident={responsible} /><strong>{responsible.name}</strong><span className="task-status done">Responsável</span></div>}

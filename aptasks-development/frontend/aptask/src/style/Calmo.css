@@ -1003,6 +1003,103 @@ button[type="submit"] {
   }
 
   .section-heading h2 {
-    font-size: 24px;
+    font-size: 22px;
+  }
+
+  /* Ajustes de celular: cartões, listas e cabeçalhos cabem em telas estreitas */
+  .brand-lockup img {
+    width: 96px;
+  }
+
+  .header-indicator {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .section-heading {
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .section-count {
+    font-size: 11px;
+  }
+
+  .resident-card {
+    position: relative;
+    gap: 8px;
+    min-height: 0;
+    padding: 12px 10px;
+  }
+
+  .resident-card .resident-avatar {
+    width: 58px;
+    height: 58px;
+    flex: 0 0 58px;
+  }
+
+  .resident-copy {
+    min-width: 0;
+  }
+
+  .resident-copy strong {
+    font-size: 14px;
+    line-height: 1.25;
+  }
+
+  .resident-copy small {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .resident-arrow {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    margin-left: 0;
+    font-size: 14px;
+  }
+
+  .task-row {
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .task-row-copy strong {
+    font-size: 14px;
+  }
+
+  .task-status {
+    padding: 4px 9px;
+    font-size: 11px;
+  }
+
+  .trash-icon {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    display: grid;
+    place-items: center;
+  }
+
+  /* Bloco de presença na tela de tarefa: avatar à esquerda, texto e botão à direita */
+  .presence-panel {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px 12px;
+  }
+
+  .presence-panel .resident-avatar.resident-avatar-large {
+    width: 84px;
+    height: 84px;
+    flex: 0 0 84px;
+  }
+
+  .presence-toggle {
+    grid-column: 1 / -1;
+    justify-self: start;
+    margin-left: 0;
   }
 }
