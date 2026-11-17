@@ -1,0 +1,277 @@
+/*
+ * Estilo artesanal e minimalista: fundo preto, traço branco de giz e
+ * bordas levemente irregulares, como um quadro desenhado à mão.
+ * Carregado depois de Home.css. Para voltar, remova o import em pages/Home.js.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;700&display=swap');
+
+:root {
+  --chalk: #efefea;
+  --chalk-soft: rgba(239, 239, 234, 0.55);
+  --chalk-faint: rgba(239, 239, 234, 0.22);
+  --hand-radius: 14px 8px 12px 10px / 10px 13px 8px 14px;
+  --hand-radius-lg: 22px 10px 18px 12px / 12px 20px 10px 22px;
+}
+
+body {
+  color: var(--chalk);
+  background: #060606;
+  font-family: 'Caveat', cursive;
+  font-size: 20px;
+}
+
+.home-page {
+  --line: var(--chalk-faint);
+  --muted: var(--chalk-soft);
+  --accent: var(--chalk);
+  color: var(--chalk);
+  font-family: 'Caveat', cursive;
+}
+
+.home-page::before {
+  background: #060606;
+}
+
+/* Cabeçalho */
+.brand-lockup span,
+.eyebrow,
+.home-hero .eyebrow,
+.section-heading .eyebrow {
+  color: var(--chalk-soft);
+  font-family: 'Caveat', cursive;
+  font-size: 18px;
+  letter-spacing: .04em;
+}
+
+.brand-lockup img {
+  filter: invert(1);
+}
+
+.home-hero h1,
+.section-heading h2 {
+  color: var(--chalk);
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.section-heading h2 {
+  font-size: 34px;
+}
+
+.hero-copy {
+  color: var(--chalk-soft);
+  font-size: 20px;
+}
+
+.header-indicator,
+.glass-badge,
+.trash-chips button {
+  border: 2px solid var(--chalk);
+  border-radius: var(--hand-radius);
+  color: var(--chalk);
+  background: transparent;
+  box-shadow: none;
+  font-family: 'Caveat', cursive;
+  font-size: 18px;
+  backdrop-filter: none;
+}
+
+.header-indicator i {
+  background: var(--chalk);
+  box-shadow: none;
+}
+
+/* Superfícies: quadro de tarefas, cartões e painéis */
+.resident-card,
+.glass-panel,
+.trash-panel,
+.task-list {
+  border: 2px solid var(--chalk);
+  border-radius: var(--hand-radius-lg);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.resident-card:hover,
+.resident-card.is-selected {
+  border-color: var(--chalk);
+  background: rgba(239, 239, 234, 0.06);
+  box-shadow: none;
+  transform: none;
+}
+
+.resident-avatar {
+  border: 2px solid var(--chalk);
+  border-radius: var(--hand-radius);
+  color: var(--chalk);
+  background: transparent;
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.resident-arrow {
+  color: var(--chalk);
+}
+
+/* Linhas de tarefa: separadores tracejados, como rabiscos */
+.task-row {
+  min-height: 64px;
+  padding: 12px 22px;
+  border-bottom: 1.5px dashed var(--chalk-faint);
+}
+
+.task-row-copy strong,
+.resident-copy strong {
+  color: var(--chalk);
+  font-family: 'Caveat', cursive;
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.task-row-copy small,
+.resident-copy small,
+.empty-state,
+.trash-panel > p,
+.home-footer {
+  color: var(--chalk-soft);
+  font-family: 'Caveat', cursive;
+  font-size: 17px;
+}
+
+/* Caixa de marcar: quadrado desenhado à mão */
+.task-check {
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--chalk);
+  border-radius: 4px 7px 5px 8px;
+  color: var(--chalk);
+  background: transparent;
+  box-shadow: none;
+}
+
+.task-check.is-done {
+  background: var(--chalk);
+  color: #060606;
+  border-color: var(--chalk);
+}
+
+.task-status {
+  border: 1.5px dashed var(--chalk-faint);
+  border-radius: var(--hand-radius);
+  color: var(--chalk-soft);
+  background: transparent;
+  box-shadow: none;
+  font-family: 'Caveat', cursive;
+  font-size: 16px;
+}
+
+.task-status.pending {
+  color: var(--chalk-soft);
+}
+
+.task-status.done {
+  color: var(--chalk);
+  border: 1.5px solid var(--chalk);
+  background: transparent;
+}
+
+/* Lixo e chips */
+.trash-icon {
+  border: 2px solid var(--chalk);
+  border-radius: var(--hand-radius);
+  color: var(--chalk);
+  background: transparent;
+}
+
+.trash-chips button.active,
+.trash-chips button:hover {
+  color: #060606;
+  background: var(--chalk);
+  border-color: var(--chalk);
+  box-shadow: none;
+}
+
+.eligible-list > span {
+  border: 1.5px dashed var(--chalk-faint);
+  background: transparent;
+  color: var(--chalk-soft);
+}
+
+/* Botões: contorno de giz; ao passar o mouse, preenchem */
+.home-page button,
+.admin-session-button {
+  border: 2px solid var(--chalk);
+  border-radius: var(--hand-radius);
+  color: var(--chalk);
+  background: transparent;
+  box-shadow: none;
+  font-family: 'Caveat', cursive;
+  font-size: 19px;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+
+.home-page button:hover,
+.admin-session-button:hover {
+  color: #060606;
+  background: var(--chalk);
+  transform: none;
+}
+
+.home-page button[type="submit"],
+.home-page .primary-button {
+  color: var(--chalk);
+  background: transparent;
+  box-shadow: none;
+  border-width: 2.5px;
+}
+
+.home-page button[type="submit"]:hover,
+.home-page .primary-button:hover {
+  color: #060606;
+  background: var(--chalk);
+}
+
+/* Campos: apenas linha inferior, como um traço */
+.home-page input,
+.home-page select,
+.home-page textarea {
+  border: 0;
+  border-bottom: 2px solid var(--chalk-soft);
+  border-radius: 0;
+  color: var(--chalk);
+  background: transparent;
+  box-shadow: none;
+  font-family: 'Caveat', cursive;
+  font-size: 19px;
+}
+
+.home-page input:focus,
+.home-page select:focus,
+.home-page textarea:focus {
+  outline: none;
+  border-bottom-color: var(--chalk);
+}
+
+.home-footer {
+  letter-spacing: 0;
+}
+
+.home-footer span {
+  color: var(--chalk-soft);
+}
+
+@media (max-width: 480px) {
+  .task-row {
+    padding: 10px 14px;
+  }
+
+  .task-row-copy strong,
+  .resident-copy strong {
+    font-size: 21px;
+  }
+}
