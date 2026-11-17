@@ -112,26 +112,30 @@ body {
   transform: translateY(-2px);
 }
 
-/* Avatares de corpo inteiro: caixa mais alta que larga */
+/* Busto sem moldura: a figura fica solta, sem fundo colorido por trás */
 .resident-avatar {
-  width: 46px;
-  height: 76px;
+  width: 68px;
+  height: 68px;
   border: 0;
-  border-radius: 14px;
-  background: #f1efe9;
-  overflow: hidden;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+  flex: 0 0 auto;
 }
 
 .resident-avatar.resident-avatar-small {
-  width: 26px;
-  height: 44px;
-  border-radius: 9px;
+  width: 34px;
+  height: 34px;
 }
 
 .resident-avatar.resident-avatar-large {
-  width: 80px;
-  height: 136px;
-  border-radius: 18px;
+  width: 120px;
+  height: 120px;
+}
+
+.resident-avatar .avatar-figure {
+  overflow: visible;
+  filter: drop-shadow(0 6px 10px rgba(70, 60, 40, 0.14));
 }
 
 .avatar-2,
