@@ -112,11 +112,26 @@ body {
   transform: translateY(-2px);
 }
 
+/* Avatares de corpo inteiro: caixa mais alta que larga */
 .resident-avatar {
+  width: 46px;
+  height: 76px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 14px;
   background: #f1efe9;
   overflow: hidden;
+}
+
+.resident-avatar.resident-avatar-small {
+  width: 26px;
+  height: 44px;
+  border-radius: 9px;
+}
+
+.resident-avatar.resident-avatar-large {
+  width: 80px;
+  height: 136px;
+  border-radius: 18px;
 }
 
 .avatar-2,
