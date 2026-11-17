@@ -25,7 +25,7 @@ function Task({ loggedUser, resident, tasks = [], trashStatus, loading, onDecisi
   return (
     <main className="task-page">
       <header className="task-header">
-        <Link className="brand-lockup" to="/home"><span className="brand-mark"><img src={Img} alt="" /></span><span>CASA EM HARMONIA</span></Link>
+        <Link className="brand-lockup" to="/home"><span className="brand-mark"><img src={Img} alt="" /></span></Link>
         <Link className="back-home" to="/home">← Início</Link>
       </header>
       <section className="task-content">

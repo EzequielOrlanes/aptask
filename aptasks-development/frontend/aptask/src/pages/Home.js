@@ -36,7 +36,6 @@ function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStat
       <header className="home-header">
         <Link className="brand-lockup" to="/home" aria-label="AP103 início">
           <span className="brand-mark"><img src={Img} alt="" /></span>
-          <span>CASA EM HARMONIA</span>
         </Link>
         {isAdmin ? <button type="button" className="header-indicator admin-session-button" onClick={onAdminLogout}><i /> Administrador · Sair</button> : <Link className="header-indicator admin-access-link" to="/login">Acesso administrativo <span aria-hidden="true">↗</span></Link>}
       </header>

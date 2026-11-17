@@ -52,8 +52,18 @@ body {
   letter-spacing: .14em;
 }
 
-.brand-lockup img {
+.brand-lockup img,
+.brand-mark img {
+  width: 150px;
+  height: auto;
   filter: none;
+}
+
+@media (max-width: 480px) {
+  .brand-lockup img,
+  .brand-mark img {
+    width: 112px;
+  }
 }
 
 .home-hero h1,
