@@ -43,7 +43,6 @@ function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStat
 
       <section className="home-hero">
         <p className="eyebrow">APARTAMENTO 103 · ROTINA DA CASA</p>
-        <h1>Uma casa leve começa<br />com todo mundo junto.</h1>
         <p className="hero-copy">Acompanhe as tarefas da semana e mantenha tudo em equilíbrio.</p>
       </section>
 
