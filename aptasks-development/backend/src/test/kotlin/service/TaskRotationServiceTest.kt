@@ -1,5 +1,6 @@
 package com.aptasks.service
 
+import com.aptasks.dto.task.TaskRotationHistoryResponse
 import com.aptasks.model.Task
 import com.aptasks.model.User
 import com.aptasks.repository.TaskRepository
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class TaskRotationServiceTest {
@@ -25,6 +27,45 @@ class TaskRotationServiceTest {
     private val history = mockk<TaskRotationHistoryRepository>(relaxed = true)
     private val service = TaskRotationService(tasks, users, rotationRuns, history)
     private val now = Instant.parse("2026-10-14T12:00:00Z")
+
+    init {
+        every { history.findByWeek(any()) } returns emptyList()
+    }
+
+    @Test
+    fun `moves a task to the next resident when it would repeat last week's owner`() {
+        val residents = listOf(resident("Ana"), resident("Bia"))
+        val task = tasks(1).single()
+        val weekStart = LocalDate.parse("2026-10-12")
+        val naturalOwner = residents[Math.floorMod(ChronoUnit.WEEKS.between(ANCHOR, weekStart), 2L).toInt()]
+        val expectedOwner = residents.first { it.id != naturalOwner.id }
+        stubRotation(residents, listOf(task))
+        every { history.findByWeek(weekStart.minusWeeks(1)) } returns listOf(
+            historyEntry(task.id, naturalOwner, weekStart.minusWeeks(1))
+        )
+
+        service.rotateCurrentWeek(now)
+
+        verify(exactly = 1) { tasks.assignForWeek(task.id, expectedOwner.id, any()) }
+        verify(exactly = 0) { tasks.assignForWeek(task.id, naturalOwner.id, any()) }
+    }
+
+    @Test
+    fun `keeps the natural owner when last week's owner was someone else`() {
+        val residents = listOf(resident("Ana"), resident("Bia"))
+        val task = tasks(1).single()
+        val weekStart = LocalDate.parse("2026-10-12")
+        val naturalOwner = residents[Math.floorMod(ChronoUnit.WEEKS.between(ANCHOR, weekStart), 2L).toInt()]
+        val otherOwner = residents.first { it.id != naturalOwner.id }
+        stubRotation(residents, listOf(task))
+        every { history.findByWeek(weekStart.minusWeeks(1)) } returns listOf(
+            historyEntry(task.id, otherOwner, weekStart.minusWeeks(1))
+        )
+
+        service.rotateCurrentWeek(now)
+
+        verify(exactly = 1) { tasks.assignForWeek(task.id, naturalOwner.id, any()) }
+    }
 
     @Test
     fun `distributes every task to the only resident`() {
@@ -97,6 +138,24 @@ class TaskRotationServiceTest {
         assertEquals(0, result.memberCount)
         verify(exactly = 0) { rotationRuns.registerWeekIfAbsent(any(), any()) }
     }
+
+    private val ANCHOR = LocalDate.of(1970, 1, 5)
+
+    private fun stubRotation(residents: List<User>, householdTasks: List<Task>) {
+        every { tasks.findAll() } returns householdTasks
+        every { users.findAll() } returns residents
+        every { rotationRuns.registerWeekIfAbsent(any(), now) } returns true
+        every { tasks.assignForWeek(any(), any(), any()) } returns true
+    }
+
+    private fun historyEntry(taskId: UUID, owner: User, weekStart: LocalDate) = TaskRotationHistoryResponse(
+        taskId = taskId,
+        taskDescription = "Tarefa",
+        userId = owner.id,
+        userName = owner.name,
+        weekStart = weekStart,
+        assignedAt = now
+    )
 
     private fun resident(name: String) = User(UUID.randomUUID(), name, "$name@example.test", true)
     private fun tasks(count: Int) = (1..count).map { index ->

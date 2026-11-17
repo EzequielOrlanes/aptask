@@ -4,6 +4,7 @@ import com.aptasks.repository.TaskRepository
 import com.aptasks.repository.TaskRotationHistoryRepository
 import com.aptasks.repository.TaskRotationRepository
 import com.aptasks.repository.UserRepository
+import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -14,6 +15,8 @@ import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import java.time.DayOfWeek
 import java.util.UUID
+
+private val rotationLogger = KotlinLogging.logger {}
 
 data class WeeklyRotationResult(
     val weekStart: LocalDate,
@@ -56,9 +59,20 @@ class TaskRotationService(
         val weekIndex = ChronoUnit.WEEKS.between(rotationAnchor, weekStart)
         val deadline = weekDeadline(weekStart)
         val counts = residents.associate { it.id to 0 }.toMutableMap()
+        val previousOwners = taskRotationHistoryRepository.findByWeek(weekStart.minusWeeks(1))
+            .mapNotNull { entry -> entry.taskId?.let { it to entry.userId } }
+            .toMap()
 
         tasks.forEachIndexed { taskIndex, task ->
-            val residentIndex = Math.floorMod(taskIndex.toLong() + weekIndex, residents.size.toLong()).toInt()
+            var residentIndex = Math.floorMod(taskIndex.toLong() + weekIndex, residents.size.toLong()).toInt()
+            // Proteção: se a tarefa voltou para quem a teve na semana anterior, avança para o próximo morador.
+            if (residents.size > 1 && previousOwners[task.id] == residents[residentIndex].id) {
+                rotationLogger.warn {
+                    "Tarefa '${task.description}' repetiu o responsável ${residents[residentIndex].name} " +
+                        "na semana $weekStart; avançando para o próximo morador."
+                }
+                residentIndex = Math.floorMod(residentIndex + 1, residents.size)
+            }
             val responsible = residents[residentIndex]
             val updated = taskRepository.assignForWeek(task.id, responsible.id, deadline)
             check(updated) { "A tarefa ${task.id} deixou de existir durante a rotação semanal." }

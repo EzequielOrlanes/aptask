@@ -34,6 +34,10 @@ class TaskRotationAssignmentTest {
     private val ana = resident("Ana")
     private val bia = resident("Bia")
 
+    init {
+        every { history.findByWeek(any()) } returns emptyList()
+    }
+
     @Test
     fun `new task goes to the least loaded resident when the week was already rotated`() {
         val anaTask1 = task(ana.id.toString())
