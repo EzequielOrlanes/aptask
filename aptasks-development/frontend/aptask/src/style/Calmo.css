@@ -364,6 +364,96 @@ body {
   color: var(--calm-muted) !important;
 }
 
+/* Lixeira: corpo com nervuras, tampa e conteúdo amassado */
+.trash-bin svg {
+  width: 112px;
+  height: auto;
+  overflow: visible;
+}
+
+.trash-bin figcaption {
+  color: var(--calm-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.trash-bin__outline {
+  fill: #f7f5f1;
+  stroke: #5b6168;
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+}
+
+.trash-bin__ribs path {
+  fill: none;
+  stroke: rgba(91, 97, 104, 0.18);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.trash-bin__rim {
+  fill: #e4e1da;
+  stroke: #5b6168;
+  stroke-width: 1.8;
+}
+
+.trash-bin__lid {
+  fill: #ffffff;
+  stroke: #5b6168;
+  stroke-width: 2;
+}
+
+.trash-bin__knob {
+  fill: #ffffff;
+  stroke: #5b6168;
+  stroke-width: 2;
+}
+
+/* Conteúdo sobe e desce junto com o nível */
+.trash-bin__content {
+  transition: transform 0.9s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+.trash-bin__waste,
+.trash-bin__crumple {
+  fill: transparent;
+  transition: fill 0.6s ease;
+}
+
+.trash-bin--half .trash-bin__waste {
+  fill: #e7d9b5;
+}
+
+.trash-bin--half .trash-bin__crumple {
+  fill: #d9c69b;
+  animation: trash-crumple-sway 4s ease-in-out infinite;
+}
+
+.trash-bin--full .trash-bin__waste {
+  fill: #e9a88f;
+}
+
+.trash-bin--full .trash-bin__crumple {
+  fill: #d98a72;
+  animation: trash-crumple-sway 2.6s ease-in-out infinite;
+}
+
+.trash-bin--full .trash-bin__outline {
+  stroke: #d2553f;
+}
+
+@keyframes trash-crumple-sway {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trash-bin--half .trash-bin__crumple,
+  .trash-bin--full .trash-bin__crumple {
+    animation: none;
+  }
+}
+
 /* Interação leve ao passar o mouse */
 .avatar-gaze {
   transition: transform .12s ease-out;
