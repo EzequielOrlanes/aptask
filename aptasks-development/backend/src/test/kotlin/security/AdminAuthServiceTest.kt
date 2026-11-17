@@ -54,10 +54,19 @@ class AdminAuthServiceTest {
     }
 
     @Test
-    fun `login is unavailable when the token secret is missing or too short`() {
-        val shortSecret = AdminAuthService("Ezequiel", "curta", 24, users)
+    fun `logs in and verifies tokens without any configured token secret`() {
+        val noSecret = AdminAuthService("Ezequiel", "", 24, users)
 
-        assertThrows<AdminAuthUnavailableException> { shortSecret.login(ezequiel.email, now) }
+        val session = noSecret.login(ezequiel.email, now)
+
+        assertTrue(noSecret.verify(session.token, now.plusSeconds(60)))
+    }
+
+    @Test
+    fun `without a secret, a wrong email is still rejected`() {
+        val noSecret = AdminAuthService("Ezequiel", "", 24, users)
+
+        assertThrows<InvalidAdminCredentialsException> { noSecret.login("outra@example.test", now) }
     }
 
     @Test

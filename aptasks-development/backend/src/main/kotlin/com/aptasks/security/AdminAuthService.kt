@@ -12,8 +12,12 @@ import javax.crypto.spec.SecretKeySpec
 
 /**
  * Login do administrador: o e-mail digitado deve ser o do morador [adminName] na tabela
- * `users`. Passando na checagem, o backend emite um token assinado (HMAC-SHA256, chave ADMIN_TOKEN_SECRET) usado nas
+ * `users`. Passando na checagem, o backend emite um token assinado (HMAC-SHA256) usado nas
  * rotas administrativas.
+ *
+ * A chave de assinatura vem de ADMIN_TOKEN_SECRET quando definida. Sem ela, usa a chave
+ * fixa [FALLBACK_SIGNING_KEY]. Nesse modo, quem souber o e-mail do administrador consegue
+ * acessar as rotas administrativas: o login depende apenas do e-mail.
  */
 @Service
 class AdminAuthService(
@@ -22,10 +26,13 @@ class AdminAuthService(
     @Value("\${admin.token-ttl-hours:168}") private val tokenTtlHours: Long,
     private val userRepository: UserRepository
 ) {
-    fun isConfigured(): Boolean = tokenSecret.length >= 32
+    private val signingKey: String = tokenSecret.ifBlank { FALLBACK_SIGNING_KEY }
+
+    companion object {
+        const val FALLBACK_SIGNING_KEY = "aptasks-admin-sem-segredo-configurado"
+    }
 
     fun login(email: String, now: Instant = Instant.now()): AdminSession {
-        if (!isConfigured()) throw AdminAuthUnavailableException()
         val admin = userRepository.findByName(adminName) ?: throw InvalidAdminCredentialsException()
         if (!admin.email.equals(email.trim(), ignoreCase = true)) throw InvalidAdminCredentialsException()
 
@@ -34,7 +41,7 @@ class AdminAuthService(
     }
 
     fun verify(token: String?, now: Instant = Instant.now()): Boolean {
-        if (!isConfigured() || token.isNullOrBlank()) return false
+        if (token.isNullOrBlank()) return false
         val parts = token.split(".")
         if (parts.size != 2) return false
         val expectedSignature = sign(parts[0])
@@ -55,7 +62,7 @@ class AdminAuthService(
 
     private fun sign(payload: String): String {
         val mac = Mac.getInstance("HmacSHA256")
-        mac.init(SecretKeySpec(tokenSecret.toByteArray(StandardCharsets.UTF_8), "HmacSHA256"))
+        mac.init(SecretKeySpec(signingKey.toByteArray(StandardCharsets.UTF_8), "HmacSHA256"))
         return Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal(payload.toByteArray(StandardCharsets.UTF_8)))
     }
 }
@@ -63,5 +70,3 @@ class AdminAuthService(
 data class AdminSession(val token: String, val expiresAt: String)
 
 class InvalidAdminCredentialsException : RuntimeException("E-mail ou senha inválidos.")
-
-class AdminAuthUnavailableException : RuntimeException("Login do administrador indisponível no momento.")
