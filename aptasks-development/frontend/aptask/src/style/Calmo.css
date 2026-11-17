@@ -305,6 +305,102 @@ body {
   color: var(--calm-teal);
 }
 
+/* Interação leve ao passar o mouse */
+.avatar-gaze {
+  transition: transform .12s ease-out;
+}
+
+.resident-avatar {
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.resident-card:hover .resident-avatar {
+  transform: scale(1.06);
+}
+
+.task-row {
+  transition: background-color .2s ease;
+}
+
+.task-row:hover {
+  background-color: rgba(60, 199, 182, 0.06);
+}
+
+.task-check {
+  transition: border-color .2s ease, background-color .2s ease, transform .2s ease;
+}
+
+.task-check:hover {
+  transform: scale(1.08);
+  border-color: var(--calm-teal);
+}
+
+.task-status,
+.glass-badge,
+.eligible-list > span {
+  transition: transform .2s ease, background-color .2s ease;
+}
+
+.task-status:hover,
+.glass-badge:hover,
+.eligible-list > span:hover {
+  transform: translateY(-1px);
+}
+
+.header-indicator,
+.trash-chips button {
+  transition: transform .2s ease, box-shadow .2s ease, background-color .2s ease;
+}
+
+.header-indicator:hover,
+.trash-chips button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(70, 60, 40, 0.12);
+}
+
+.trash-icon {
+  transition: transform .25s ease;
+}
+
+.trash-panel:hover .trash-icon {
+  transform: rotate(-6deg);
+}
+
+.brand-lockup img {
+  transition: transform .3s ease;
+}
+
+.brand-lockup:hover img {
+  transform: rotate(-3deg) scale(1.03);
+}
+
+.resident-arrow {
+  transition: transform .2s ease, color .2s ease;
+}
+
+.resident-card:hover .resident-arrow {
+  transform: translateX(3px);
+  color: var(--calm-teal);
+}
+
+.home-footer span {
+  transition: opacity .2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resident-card:hover .resident-avatar,
+  .task-check:hover,
+  .task-status:hover,
+  .glass-badge:hover,
+  .header-indicator:hover,
+  .trash-chips button:hover,
+  .brand-lockup:hover img,
+  .resident-card:hover .resident-arrow,
+  .trash-panel:hover .trash-icon {
+    transform: none;
+  }
+}
+
 @media (max-width: 480px) {
   .resident-card,
   .glass-panel,
