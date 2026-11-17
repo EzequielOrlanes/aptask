@@ -454,6 +454,22 @@ body {
   }
 }
 
+/* Objetos dentro da lixeira: caem para dentro quando aparecem */
+.trash-item {
+  animation: trash-item-drop 0.6s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+
+@keyframes trash-item-drop {
+  from { transform: translateY(-22px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trash-item {
+    animation: none;
+  }
+}
+
 /* Moscas: voam em trajetórias irregulares, com asas batendo */
 .trash-fly {
   animation: trash-fly-path 2.8s ease-in-out infinite;
