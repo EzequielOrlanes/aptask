@@ -61,6 +61,16 @@ class TaskRotationHistoryRepository(private val jdbcTemplate: JdbcTemplate) {
         rowMapper
     )
 
+    fun findByWeek(weekStart: LocalDate): List<TaskRotationHistoryResponse> = jdbcTemplate.query(
+        """
+        SELECT task_id, task_description, user_id, user_name, week_start, assigned_at
+        FROM task_rotation_history
+        WHERE week_start = ?
+        """.trimIndent(),
+        rowMapper,
+        Date.valueOf(weekStart)
+    )
+
     fun findByUserId(userId: UUID): List<TaskRotationHistoryResponse> = jdbcTemplate.query(
         """
         SELECT task_id, task_description, user_id, user_name, week_start, assigned_at
