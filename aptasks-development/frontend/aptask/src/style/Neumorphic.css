@@ -1,0 +1,196 @@
+/*
+ * Teste de design: superfícies neumórficas escuras com acento em gradiente rosa → laranja.
+ * Carregado depois de Home.css. Para voltar ao visual atual, remova o import em pages/Home.js.
+ */
+
+:root {
+  --neu-base: #2a2b30;
+  --neu-light: #33353b;
+  --neu-dark: #1f2024;
+  --neu-text: #eceef2;
+  --neu-muted: #8d939d;
+  --neu-accent: linear-gradient(135deg, #ff3d7f 0%, #ff8a3d 100%);
+  --neu-radius: 20px;
+  --neu-raised: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light);
+  --neu-inset: inset 4px 4px 9px var(--neu-dark), inset -4px -4px 9px var(--neu-light);
+}
+
+body {
+  color: var(--neu-text);
+  background: var(--neu-base);
+}
+
+.home-page {
+  --line: rgba(255, 255, 255, 0.06);
+  --muted: var(--neu-muted);
+  --accent: #ff5a7a;
+  color: var(--neu-text);
+}
+
+.home-page::before {
+  background: var(--neu-base);
+}
+
+/* Cabeçalho */
+.brand-lockup span,
+.eyebrow,
+.home-hero .eyebrow,
+.section-heading .eyebrow {
+  color: var(--neu-muted);
+}
+
+.home-hero h1,
+.section-heading h2,
+.resident-copy strong,
+.task-row-copy strong {
+  color: var(--neu-text);
+}
+
+.header-indicator,
+.glass-badge,
+.trash-chips button {
+  border: 0;
+  color: var(--neu-text);
+  background: var(--neu-base);
+  box-shadow: var(--neu-raised);
+}
+
+.header-indicator i {
+  background: #ff3d7f;
+  box-shadow: 0 0 10px rgba(255, 61, 127, 0.6);
+}
+
+/* Superfícies: cartões, painéis e listas */
+.resident-card,
+.glass-panel,
+.trash-panel,
+.task-list {
+  border: 0;
+  border-radius: var(--neu-radius);
+  background: var(--neu-base);
+  box-shadow: var(--neu-raised);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.resident-card:hover,
+.resident-card.is-selected {
+  border: 0;
+  background: var(--neu-base);
+  box-shadow: var(--neu-inset);
+  transform: none;
+}
+
+.task-row {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.resident-avatar {
+  color: var(--neu-text);
+  background: var(--neu-base);
+  box-shadow: var(--neu-raised);
+}
+
+.resident-arrow {
+  color: #ff8a3d;
+}
+
+.resident-copy small,
+.task-row-copy small,
+.empty-state,
+.trash-panel > p,
+.home-footer {
+  color: var(--neu-muted);
+}
+
+/* Estados */
+.task-check {
+  border: 0;
+  background: var(--neu-base);
+  box-shadow: var(--neu-inset);
+}
+
+.task-check.is-done {
+  border: 0;
+  color: #fff;
+  background: var(--neu-accent);
+  box-shadow: 0 0 12px rgba(255, 61, 127, 0.35);
+}
+
+.task-status {
+  border: 0;
+  background: var(--neu-base);
+  box-shadow: var(--neu-raised);
+}
+
+.task-status.pending {
+  color: var(--neu-muted);
+}
+
+.task-status.done {
+  color: #fff;
+  background: var(--neu-accent);
+  box-shadow: none;
+}
+
+.trash-chips button.active,
+.trash-chips button:hover {
+  color: #fff;
+  background: var(--neu-accent);
+  box-shadow: none;
+}
+
+/* Botões de ação, incluindo os dos painéis administrativos */
+.home-page button,
+.admin-session-button {
+  border: 0;
+  border-radius: 14px;
+  color: var(--neu-text);
+  background: var(--neu-base);
+  box-shadow: var(--neu-raised);
+  cursor: pointer;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.home-page button:hover {
+  transform: translateY(-1px);
+}
+
+.home-page button:active {
+  box-shadow: var(--neu-inset);
+}
+
+.home-page button[type="submit"],
+.home-page .primary-button {
+  color: #fff;
+  background: var(--neu-accent);
+  box-shadow: 0 6px 18px rgba(255, 61, 127, 0.35);
+}
+
+/* Campos de texto */
+.home-page input,
+.home-page select,
+.home-page textarea {
+  border: 0;
+  border-radius: 12px;
+  color: var(--neu-text);
+  background: var(--neu-base);
+  box-shadow: var(--neu-inset);
+}
+
+.home-page input:focus,
+.home-page select:focus,
+.home-page textarea:focus {
+  outline: 2px solid rgba(255, 61, 127, 0.6);
+  outline-offset: 2px;
+}
+
+/* Fundo mais discreto em telas pequenas */
+@media (max-width: 480px) {
+  .resident-card,
+  .glass-panel,
+  .trash-panel,
+  .task-list {
+    border-radius: 16px;
+  }
+}
