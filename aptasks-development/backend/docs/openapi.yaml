@@ -1,0 +1,708 @@
+openapi: 3.0.3
+info:
+  title: AP103 API
+  version: 1.0.0
+  description: |
+    API de gestão da casa (apartamento 103): tarefas semanais, lixo, multas e moradores.
+    Todas as respostas usam o envelope `ApiResponse`. Rotas administrativas exigem
+    `Authorization: Bearer <token>` obtido em `POST /auth/admin/login`.
+servers:
+  - url: https://apptasks-e6oh.onrender.com
+    description: Produção (Render, plano gratuito; a primeira requisição pode demorar por causa do cold start)
+  - url: http://localhost:8080
+    description: Local (Spring Boot)
+
+tags:
+  - name: Auth
+  - name: Moradores
+  - name: Tarefas
+  - name: Lixo
+  - name: Multas
+
+paths:
+  /auth/admin/login:
+    post:
+      tags: [Auth]
+      summary: Login do administrador pelo e-mail
+      description: O e-mail precisa ser o do morador cujo nome é `ADMIN_NAME` (padrão `Ezequiel`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminLoginRequest' }
+      responses:
+        '200':
+          description: Sessão criada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/AdminSession' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /residents:
+    get:
+      tags: [Moradores]
+      summary: Lista os moradores
+      responses:
+        '200':
+          description: Moradores
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Resident' }
+
+  /residents/{id}/presence:
+    patch:
+      tags: [Moradores]
+      summary: Atualiza se o morador está em casa
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResidentPresenceRequest' }
+      responses:
+        '200':
+          description: Presença atualizada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Resident' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /tasks/weekly:
+    get:
+      tags: [Tarefas]
+      summary: Distribuição da semana atual
+      description: |
+        Antes de responder, executa a rotação da semana, se ainda não tiver sido feita.
+        Por isso é o ponto que garante a rotação mesmo com o servidor acordando depois de 00:10.
+      responses:
+        '200':
+          description: Tarefas da semana
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/WeeklyTask' }
+
+  /tasks/history:
+    get:
+      tags: [Tarefas]
+      summary: Histórico de atribuições por semana
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          description: Filtra por morador. Sem o parâmetro, retorna tudo.
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Histórico
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/TaskRotationHistory' }
+
+  /tasks/{id}/decision:
+    patch:
+      tags: [Tarefas]
+      summary: Registra se a tarefa foi feita
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaskDecisionRequest' }
+      responses:
+        '200':
+          description: Decisão registrada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/WeeklyTask' }
+
+  /tasks/{id}/toggle:
+    patch:
+      tags: [Tarefas]
+      summary: Alterna o estado de conclusão da tarefa
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Estado alternado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiResponse' }
+
+  /tasks/create:
+    post:
+      tags: [Tarefas]
+      summary: Cria uma tarefa (administrador)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTaskRequest' }
+      responses:
+        '201':
+          description: Tarefa criada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Task' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /tasks:
+    get:
+      tags: [Tarefas]
+      summary: Lista todas as tarefas
+      responses:
+        '200':
+          description: Tarefas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Task' }
+
+  /tasks/read:
+    get:
+      tags: [Tarefas]
+      summary: Alias de `GET /tasks`
+      responses:
+        '200':
+          description: Tarefas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Task' }
+
+  /tasks/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Tarefas]
+      summary: Busca uma tarefa
+      responses:
+        '200':
+          description: Tarefa
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Task' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Tarefas]
+      summary: Altera descrição e responsável (administrador)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateTaskRequest' }
+      responses:
+        '200':
+          description: Tarefa atualizada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Task' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Tarefas]
+      summary: Remove uma tarefa (administrador)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Tarefa removida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiResponse' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /trash/today:
+    get:
+      tags: [Lixo]
+      summary: Estado atual do lixo
+      responses:
+        '200':
+          description: Estado do lixo
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/TrashStatus' }
+
+  /trash/responsible:
+    patch:
+      tags: [Lixo]
+      summary: Define quem está com o lixo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TrashResponsibleRequest' }
+      responses:
+        '200':
+          description: Responsável definido
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/TrashStatus' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /trash/half:
+    post:
+      tags: [Lixo]
+      summary: Avisa que o lixo está meio cheio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TrashReportRequest' }
+      responses:
+        '200':
+          description: Estado após o aviso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/TrashStatus' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /trash/full:
+    post:
+      tags: [Lixo]
+      summary: Avisa que o lixo está cheio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TrashReportRequest' }
+      responses:
+        '200':
+          description: Estado após o aviso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/TrashStatus' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /trash/empty:
+    post:
+      tags: [Lixo]
+      summary: Marca o lixo como esvaziado (somente o responsável atual)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TrashEmptyRequest' }
+      responses:
+        '200':
+          description: Lixo esvaziado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/TrashStatus' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /fines:
+    post:
+      tags: [Multas]
+      summary: Registra uma multa entre dois moradores
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FineRequest' }
+      responses:
+        '200':
+          description: Multa registrada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Fine' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    get:
+      tags: [Multas]
+      summary: Multas de um morador (enviadas e recebidas)
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Multas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/FineView' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /fines/{id}/paid:
+    patch:
+      tags: [Multas]
+      summary: Marca a multa como paga
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Multa paga
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Fine' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /fines/admin:
+    get:
+      tags: [Multas]
+      summary: Todas as multas (administrador)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Multas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/FineView' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /fines/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    delete:
+      tags: [Multas]
+      summary: Remove uma multa (administrador)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Multa removida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiResponse' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Token retornado por `POST /auth/admin/login`. Expira conforme `ADMIN_TOKEN_TTL_HOURS` (168 h por padrão).
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: Identificador UUID. Para multas, o backend também aceita texto e valida o formato.
+      schema: { type: string, format: uuid }
+
+  responses:
+    BadRequest:
+      description: Dados inválidos (mensagem em português no campo `error`)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+    Unauthorized:
+      description: Token ausente, inválido ou expirado, ou e-mail de administrador incorreto
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+    Forbidden:
+      description: "Ação restrita (ex.: só o responsável pelo lixo pode marcar como esvaziado)"
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+    Conflict:
+      description: "Estado não permite a ação (ex.: o lixo já está vazio)"
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiResponse' }
+
+  schemas:
+    ApiResponse:
+      type: object
+      description: Envelope padrão. Em sucesso vêm `message`, `data` e `count` (em listas). Em erro vem `error`.
+      properties:
+        success: { type: boolean }
+        message: { type: string, nullable: true }
+        data: { nullable: true }
+        count: { type: integer, nullable: true }
+        error: { type: string, nullable: true }
+        timestamp: { type: string, nullable: true, description: 'Instante em ISO-8601' }
+      required: [success]
+
+    AdminLoginRequest:
+      type: object
+      properties:
+        email: { type: string, format: email, example: ezequiel@aptasks.local }
+      required: [email]
+
+    AdminSession:
+      type: object
+      properties:
+        token: { type: string, description: 'payload.assinatura (base64url)' }
+        expiresAt: { type: string, format: date-time }
+
+    Resident:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, example: Gabriela }
+        isAtHome: { type: boolean }
+
+    ResidentPresenceRequest:
+      type: object
+      properties:
+        isAtHome: { type: boolean }
+      required: [isAtHome]
+
+    Task:
+      type: object
+      description: Entidade da tabela `tasks`.
+      properties:
+        id: { type: string, format: uuid }
+        description: { type: string, example: 'Banheiro social' }
+        inTime: { type: boolean }
+        userId: { type: string, description: 'Id do morador responsável, em texto' }
+        isCompleted: { type: boolean }
+        dueAt: { type: string, format: date-time, nullable: true }
+        fineAppliedAt: { type: string, format: date-time, nullable: true }
+        decisionAt: { type: string, format: date-time, nullable: true }
+
+    WeeklyTask:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        description: { type: string }
+        userId: { type: string, format: uuid }
+        userName: { type: string }
+        weekStart: { type: string, format: date, example: '2026-11-16' }
+        deadline: { type: string, format: date-time, nullable: true }
+        status: { type: string, enum: [pending, done], description: 'Derivado de isCompleted' }
+        decisionRecorded: { type: boolean }
+        fineApplied: { type: boolean }
+        fineAmount: { type: number, nullable: true }
+
+    TaskDecisionRequest:
+      type: object
+      properties:
+        done: { type: boolean }
+      required: [done]
+
+    CreateTaskRequest:
+      type: object
+      properties:
+        responsible_user: { type: string, format: uuid }
+        description: { type: string }
+        dueAt: { type: string, format: date-time, nullable: true, description: 'Precisa estar no futuro' }
+      required: [responsible_user, description]
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        responsible_user: { type: string, format: uuid }
+        description: { type: string }
+        dueAt: { type: string, format: date-time, nullable: true }
+      required: [responsible_user, description]
+
+    TaskRotationHistory:
+      type: object
+      properties:
+        taskId: { type: string, format: uuid, nullable: true }
+        taskDescription: { type: string }
+        userId: { type: string, format: uuid }
+        userName: { type: string }
+        weekStart: { type: string, format: date }
+        assignedAt: { type: string, format: date-time }
+
+    TrashStatus:
+      type: object
+      properties:
+        responsible:
+          nullable: true
+          allOf: [{ $ref: '#/components/schemas/Resident' }]
+        fillLevel: { type: string, enum: [EMPTY, HALF, FULL] }
+        isFull: { type: boolean }
+        reportedAt: { type: string, format: date-time, nullable: true }
+        reportedBy:
+          nullable: true
+          allOf: [{ $ref: '#/components/schemas/Resident' }]
+
+    TrashResponsibleRequest:
+      type: object
+      properties:
+        residentId: { type: string, format: uuid, nullable: true }
+
+    TrashReportRequest:
+      type: object
+      properties:
+        reportedByResidentId: { type: string, format: uuid, nullable: true }
+
+    TrashEmptyRequest:
+      type: object
+      properties:
+        updatedByResidentId: { type: string, format: uuid, nullable: true }
+
+    FineRequest:
+      type: object
+      properties:
+        amount: { type: number, format: double, example: 5.0, description: 'Maior que zero e até o limite configurado' }
+        sender: { type: string, format: uuid, description: 'Morador que aplica a multa' }
+        receiver: { type: string, format: uuid, description: 'Morador multado. Diferente do remetente.' }
+        timestamp: { type: string, format: date-time, description: 'Padrão: agora' }
+      required: [amount, sender, receiver]
+
+    Fine:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        timestamp: { type: string, format: date-time }
+        amount: { type: number, format: double }
+        sender: { type: string, format: uuid }
+        receiver: { type: string, format: uuid }
+        isPaid: { type: boolean }
+
+    FineView:
+      type: object
+      description: Multa vista a partir de um morador.
+      properties:
+        id: { type: string, format: uuid }
+        timestamp: { type: string, format: date-time }
+        amount: { type: number, format: double }
+        senderId: { type: string, format: uuid }
+        senderName: { type: string }
+        receiverId: { type: string, format: uuid }
+        receiverName: { type: string }
+        isPaid: { type: boolean }
+        direction: { type: string, description: 'Se o morador é remetente ou destinatário' }
