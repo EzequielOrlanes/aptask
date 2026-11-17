@@ -29,7 +29,10 @@ body {
 }
 
 .home-page::before {
-  background: #060606;
+  background:
+    radial-gradient(ellipse at 15% 10%, rgba(255, 255, 255, 0.07), transparent 40%),
+    radial-gradient(ellipse at 85% 60%, rgba(255, 255, 255, 0.04), transparent 45%),
+    #060606;
 }
 
 /* Cabeçalho */
@@ -67,14 +70,15 @@ body {
 .header-indicator,
 .glass-badge,
 .trash-chips button {
-  border: 2px solid var(--chalk);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
   border-radius: var(--hand-radius);
   color: var(--chalk);
-  background: transparent;
-  box-shadow: none;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
   font-family: 'Caveat', cursive;
   font-size: 18px;
-  backdrop-filter: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .header-indicator i {
@@ -82,25 +86,30 @@ body {
   box-shadow: none;
 }
 
-/* Superfícies: quadro de tarefas, cartões e painéis */
+/* Superfícies de vidro: translúcidas, com desfoque e brilho na borda, mantendo o contorno irregular */
 .resident-card,
 .glass-panel,
 .trash-panel,
 .task-list {
-  border: 2px solid var(--chalk);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
   border-radius: var(--hand-radius-lg);
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    0 14px 36px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
 }
 
 .resident-card:hover,
 .resident-card.is-selected {
-  border-color: var(--chalk);
-  background: rgba(239, 239, 234, 0.06);
-  box-shadow: none;
-  transform: none;
+  border-color: rgba(255, 255, 255, 0.5);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 18px 40px rgba(0, 0, 0, 0.6);
+  transform: translateY(-2px);
 }
 
 .resident-avatar {
@@ -146,17 +155,18 @@ body {
 .task-check {
   width: 26px;
   height: 26px;
-  border: 2px solid var(--chalk);
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
   border-radius: 4px 7px 5px 8px;
   color: var(--chalk);
-  background: transparent;
-  box-shadow: none;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .task-check.is-done {
-  background: var(--chalk);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.45));
   color: #060606;
-  border-color: var(--chalk);
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
 }
 
 .task-status {
@@ -204,22 +214,25 @@ body {
 /* Botões: contorno de giz; ao passar o mouse, preenchem */
 .home-page button,
 .admin-session-button {
-  border: 2px solid var(--chalk);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
   border-radius: var(--hand-radius);
   color: var(--chalk);
-  background: transparent;
-  box-shadow: none;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 6px 16px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   font-family: 'Caveat', cursive;
   font-size: 19px;
   cursor: pointer;
-  transition: background .15s ease, color .15s ease;
+  transition: background .2s ease, box-shadow .2s ease, transform .2s ease;
 }
 
 .home-page button:hover,
 .admin-session-button:hover {
-  color: #060606;
-  background: var(--chalk);
-  transform: none;
+  color: var(--chalk);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.07));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 22px rgba(0, 0, 0, 0.5);
+  transform: translateY(-1px);
 }
 
 .home-page button[type="submit"],
