@@ -141,7 +141,9 @@ body {
 .avatar-2,
 .avatar-3,
 .avatar-4 {
-  background: #f1efe9;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 /* Figuras animadas: respiração suave e piscar ocasional */
