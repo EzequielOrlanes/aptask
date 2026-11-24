@@ -172,6 +172,12 @@
   opacity: 0.75;
 }
 
+.board-slide-deadline {
+  display: block;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
 .board-slide-head em {
   padding: 3px 10px;
   border-radius: 999px;

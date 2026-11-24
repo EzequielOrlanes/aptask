@@ -39,6 +39,8 @@ export function buildBoard(weeklyBoard, residents = []) {
     position: week.position,
     weekStart: week.weekStart,
     weekEnd: week.weekEnd,
+    // Prazo prorrogado, só na semana em vigor.
+    deadline: week.position === "current" ? weeklyBoard.extendedUntil || null : null,
     range: `${formatDay(week.weekStart)} – ${formatDay(week.weekEnd)}`,
     isCurrent: week.position === "current",
     isPast: week.position === "previous",

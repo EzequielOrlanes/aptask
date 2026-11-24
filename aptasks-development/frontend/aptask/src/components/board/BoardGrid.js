@@ -1,11 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { formatDateTime } from "../../data/board";
 import { PersonLabel, StatusBadge } from "./BoardParts";
 
 // Opção A: carrossel de semanas. A semana ativa fica em foco no centro e as
 // vizinhas ficam desfocadas atrás; clicar numa delas a traz para o centro.
 function BoardGrid({ board, onEditDeadline }) {
-  const initial = Math.max(0, board.weeks.findIndex(week => week.isCurrent));
-  const [active, setActive] = useState(initial);
+  const currentIndex = Math.max(0, board.weeks.findIndex(week => week.isCurrent));
+  const [active, setActive] = useState(currentIndex);
+  // Quando as semanas mudam (prazo editado, semana reaberta), o foco volta para a semana atual.
+  const weeksKey = board.weeks.map(week => week.weekStart).join("|");
+  useEffect(() => { setActive(currentIndex); }, [weeksKey, currentIndex]);
   const last = board.weeks.length - 1;
   const go = index => setActive(Math.min(last, Math.max(0, index)));
 
@@ -42,6 +46,7 @@ function BoardGrid({ board, onEditDeadline }) {
                         {week.range} <span aria-hidden="true">✎</span>
                       </button>
                     ) : <small>{week.range}</small>}
+                    {week.deadline && <small className="board-slide-deadline">Prazo até {formatDateTime(week.deadline)}</small>}
                   </span>
                   {week.isCurrent && <em>Atual</em>}
                 </header>
