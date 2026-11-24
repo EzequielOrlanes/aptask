@@ -1,6 +1,7 @@
 package com.aptasks.repository
 
 import com.aptasks.dto.task.TaskRotationHistoryResponse
+import com.aptasks.dto.task.TaskRotationOutcome
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.stereotype.Repository
@@ -81,4 +82,49 @@ class TaskRotationHistoryRepository(private val jdbcTemplate: JdbcTemplate) {
         rowMapper,
         userId
     )
+
+    /** Tarefas e resultados de uma semana, para o quadro semanal. */
+    fun findOutcomesByWeek(weekStart: LocalDate): List<TaskRotationOutcome> = jdbcTemplate.query(
+        """
+        SELECT task_id, task_description, user_id, user_name, is_completed
+        FROM task_rotation_history
+        WHERE week_start = ?
+        ORDER BY user_name, task_description
+        """.trimIndent(),
+        RowMapper { rs, _ ->
+            val completed = rs.getBoolean("is_completed")
+            TaskRotationOutcome(
+                taskId = rs.getObject("task_id", UUID::class.java),
+                taskDescription = rs.getString("task_description"),
+                userId = rs.getObject("user_id", UUID::class.java),
+                userName = rs.getString("user_name"),
+                isCompleted = if (rs.wasNull()) null else completed
+            )
+        },
+        Date.valueOf(weekStart)
+    )
+
+    /**
+     * Grava o resultado na última semana anterior a [beforeWeek] em que a tarefa foi atribuída,
+     * se ela ainda não tiver resultado. Deve rodar antes de a rotação zerar o estado da tarefa.
+     */
+    fun sealOutcome(taskId: UUID, beforeWeek: LocalDate, isCompleted: Boolean, decisionAt: Instant?, fineApplied: Boolean) {
+        jdbcTemplate.update(
+            """
+            UPDATE task_rotation_history
+            SET is_completed = ?, decision_at = ?, fine_applied = ?
+            WHERE id = (
+                SELECT id FROM task_rotation_history
+                WHERE task_id = ? AND week_start < ?
+                ORDER BY week_start DESC
+                LIMIT 1
+            ) AND is_completed IS NULL
+            """.trimIndent(),
+            isCompleted,
+            decisionAt?.let { Timestamp.from(it) },
+            fineApplied,
+            taskId,
+            Date.valueOf(beforeWeek)
+        )
+    }
 }

@@ -1,5 +1,7 @@
 package com.aptasks.service
 
+import com.aptasks.model.Task
+import com.aptasks.model.User
 import com.aptasks.repository.TaskRepository
 import com.aptasks.repository.TaskRotationHistoryRepository
 import com.aptasks.repository.TaskRotationRepository
@@ -56,24 +58,21 @@ class TaskRotationService(
             return WeeklyRotationResult(weekStart, false, tasks.size, residents.size, emptyMap())
         }
 
-        val weekIndex = ChronoUnit.WEEKS.between(rotationAnchor, weekStart)
         val deadline = weekDeadline(weekStart)
         val counts = residents.associate { it.id to 0 }.toMutableMap()
         val previousOwners = taskRotationHistoryRepository.findByWeek(weekStart.minusWeeks(1))
             .mapNotNull { entry -> entry.taskId?.let { it to entry.userId } }
             .toMap()
 
-        tasks.forEachIndexed { taskIndex, task ->
-            var residentIndex = Math.floorMod(taskIndex.toLong() + weekIndex, residents.size.toLong()).toInt()
-            // Proteção: se a tarefa voltou para quem a teve na semana anterior, avança para o próximo morador.
-            if (residents.size > 1 && previousOwners[task.id] == residents[residentIndex].id) {
-                rotationLogger.warn {
-                    "Tarefa '${task.description}' repetiu o responsável ${residents[residentIndex].name} " +
-                        "na semana $weekStart; avançando para o próximo morador."
-                }
-                residentIndex = Math.floorMod(residentIndex + 1, residents.size)
-            }
-            val responsible = residents[residentIndex]
+        planWeek(weekStart, tasks, residents, previousOwners).forEach { (task, responsible) ->
+            // Guarda o resultado da semana que está acabando antes de a atribuição zerar a tarefa.
+            taskRotationHistoryRepository.sealOutcome(
+                taskId = task.id,
+                beforeWeek = weekStart,
+                isCompleted = task.isCompleted,
+                decisionAt = task.decisionAt,
+                fineApplied = task.fineAppliedAt != null
+            )
             val updated = taskRepository.assignForWeek(task.id, responsible.id, deadline)
             check(updated) { "A tarefa ${task.id} deixou de existir durante a rotação semanal." }
             taskRotationHistoryRepository.recordAssignment(
@@ -94,6 +93,33 @@ class TaskRotationService(
             memberCount = residents.size,
             assignmentsPerMember = residents.associate { it.name to counts.getValue(it.id) }
         )
+    }
+
+    /**
+     * Define quem fica com cada tarefa em [weekStart]. Não grava nada: serve tanto à rotação
+     * quanto à previsão da próxima semana no quadro. [previousOwners] liga tarefa ao responsável
+     * da semana anterior, para que ninguém repita a mesma tarefa duas semanas seguidas.
+     */
+    fun planWeek(
+        weekStart: LocalDate,
+        tasks: List<Task>,
+        residents: List<User>,
+        previousOwners: Map<UUID, UUID>
+    ): List<Pair<Task, User>> {
+        if (residents.isEmpty()) return emptyList()
+        val weekIndex = ChronoUnit.WEEKS.between(rotationAnchor, weekStart)
+        return tasks.mapIndexed { taskIndex, task ->
+            var residentIndex = Math.floorMod(taskIndex.toLong() + weekIndex, residents.size.toLong()).toInt()
+            // Proteção: se a tarefa voltou para quem a teve na semana anterior, avança para o próximo morador.
+            if (residents.size > 1 && previousOwners[task.id] == residents[residentIndex].id) {
+                rotationLogger.warn {
+                    "Tarefa '${task.description}' repetiu o responsável ${residents[residentIndex].name} " +
+                        "na semana $weekStart; avançando para o próximo morador."
+                }
+                residentIndex = Math.floorMod(residentIndex + 1, residents.size)
+            }
+            task to residents[residentIndex]
+        }
     }
 
     /** Coloca uma nova tarefa na semana atual sem mexer nas tarefas já concluídas. */

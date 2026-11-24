@@ -55,6 +55,9 @@ CREATE TABLE IF NOT EXISTS task_rotation_history (
     user_name         TEXT NOT NULL,
     week_start        DATE NOT NULL,
     assigned_at       TIMESTAMPTZ NOT NULL,
+    is_completed      BOOLEAN NULL,
+    decision_at       TIMESTAMPTZ NULL,
+    fine_applied      BOOLEAN NULL,
     CONSTRAINT uq_task_rotation_history_task_week UNIQUE (task_id, week_start)
 );
 

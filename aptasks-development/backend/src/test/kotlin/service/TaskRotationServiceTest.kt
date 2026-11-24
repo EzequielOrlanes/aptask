@@ -68,6 +68,32 @@ class TaskRotationServiceTest {
     }
 
     @Test
+    fun `seals last week's outcome before the assignment resets the task`() {
+        val residents = listOf(resident("Ana"), resident("Bia"))
+        val done = Task(id = UUID.randomUUID(), description = "Feita", userId = residents[0].id.toString(), isCompleted = true)
+        val notDone = Task(id = UUID.randomUUID(), description = "Nao feita", userId = residents[1].id.toString(), isCompleted = false)
+        stubRotation(residents, listOf(done, notDone))
+        val weekStart = LocalDate.parse("2026-10-12")
+
+        service.rotateCurrentWeek(now)
+
+        verify(exactly = 1) { history.sealOutcome(done.id, weekStart, true, any(), false) }
+        verify(exactly = 1) { history.sealOutcome(notDone.id, weekStart, false, any(), false) }
+    }
+
+    @Test
+    fun `plans a week without writing anything`() {
+        val residents = listOf(resident("Ana"), resident("Bia"))
+        val householdTasks = tasks(2)
+
+        val plan = service.planWeek(LocalDate.parse("2026-10-19"), householdTasks, residents, emptyMap())
+
+        assertEquals(householdTasks, plan.map { it.first })
+        assertEquals(2, plan.map { it.second.id }.toSet().size)
+        verify(exactly = 0) { tasks.assignForWeek(any(), any(), any()) }
+    }
+
+    @Test
     fun `distributes every task to the only resident`() {
         val resident = resident("Ana")
         val householdTasks = tasks(4)

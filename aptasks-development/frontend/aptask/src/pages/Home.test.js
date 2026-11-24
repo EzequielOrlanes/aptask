@@ -9,7 +9,7 @@ const renderHome = props => render(
 );
 
 test("sem dados do backend mostra esqueletos e nenhum morador inventado", () => {
-  renderHome({ ready: { tasks: false, residents: false, trash: false } });
+  renderHome({ ready: { tasks: false, board: false, residents: false, trash: false } });
 
   expect(screen.getByText("Carregando moradores…")).toBeInTheDocument();
   expect(screen.getByText("Carregando tarefas…")).toBeInTheDocument();
@@ -20,9 +20,11 @@ test("sem dados do backend mostra esqueletos e nenhum morador inventado", () => 
 
 test("com dados do backend mostra moradores e tarefas reais", () => {
   renderHome({
-    ready: { tasks: true, residents: true, trash: true },
+    ready: { tasks: true, board: true, residents: true, trash: true },
     residents: [{ id: "1", name: "Ana", nickname: "Aninha", initials: "AN" }],
-    tasks: [{ id: "t1", task: "Lavar louça", userName: "Ana", status: false }],
+    board: { weeks: [{ weekStart: "2026-10-12", weekEnd: "2026-10-18", position: "current", entries: [
+      { userId: "1", userName: "Ana", taskDescription: "Lavar louça", status: "pending" },
+    ] }] },
     trashStatus: { fillLevel: "EMPTY" },
   });
 
