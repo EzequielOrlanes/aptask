@@ -197,3 +197,33 @@ describe("editar o prazo pela data da semana", () => {
     expect(screen.queryByRole("button", { name: /Editar o prazo da próxima semana/ })).not.toBeInTheDocument();
   });
 });
+
+describe("quando as semanas mudam", () => {
+  const shifted = {
+    extendedUntil: "2026-10-25T23:59:00Z",
+    weeks: [
+      { weekStart: "2026-09-28", weekEnd: "2026-10-04", position: "previous", entries: [] },
+      { weekStart: "2026-10-05", weekEnd: "2026-10-11", position: "current", entries: [] },
+      { weekStart: "2026-10-12", weekEnd: "2026-10-18", position: "next", entries: [] },
+    ],
+  };
+
+  it("volta o foco para a nova semana atual, mesmo com outra semana em foco", () => {
+    const { rerender } = render(<WeeklyBoard board={response} residents={[ANA, BIA]} ready />);
+    fireEvent.click(screen.getByRole("button", { name: /Semana anterior, / }));
+    expect(screen.getByRole("region", { name: /Semana anterior/ })).toHaveAttribute("data-offset", "0");
+
+    // O admin reabriu a semana anterior: ela passa a ser a atual e as demais se deslocam.
+    rerender(<WeeklyBoard board={shifted} residents={[ANA, BIA]} ready />);
+
+    const current = screen.getByRole("region", { name: /Esta semana/ });
+    expect(current).toHaveAttribute("data-offset", "0");
+    expect(current).toHaveTextContent("05/10 – 11/10");
+  });
+
+  it("mostra o prazo prorrogado no cabeçalho da semana atual", () => {
+    render(<WeeklyBoard board={shifted} residents={[ANA, BIA]} ready />);
+    expect(screen.getByRole("region", { name: /Esta semana/ })).toHaveTextContent("Prazo até");
+    expect(screen.getByRole("button", { name: /Semana anterior, / })).not.toHaveTextContent("Prazo até");
+  });
+});
