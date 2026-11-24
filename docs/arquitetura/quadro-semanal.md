@@ -1,31 +1,39 @@
-# Quadro semanal (protótipos)
+# Quadro semanal (carrossel)
 
-Três protótipos do quadro de tarefas, organizados por semanas do mês e por morador, para decidir qual desenho seguir. Usam dados de exemplo no frontend: o backend ainda não guarda o resultado das semanas passadas.
+O quadro de tarefas da Home é um carrossel com a semana anterior, a atual e a próxima. A semana atual fica em foco no centro; as vizinhas ficam desfocadas atrás e, ao clicar, vêm para o foco e mostram cada tarefa de cada morador com o resultado. Os dados vêm do backend.
 
 ```mermaid
 flowchart LR
-    Home["Home.js<br/>seção Quadro de tarefas"] --> BP["BoardPrototype<br/>seletor de visualização"]
-    BP -->|Lista atual| Lista["Lista existente<br/>(props tasks e ready da API)"]
-    BP -->|A| Grid["BoardGrid<br/>carrossel de semanas"]
-    BP -->|B| Cols["BoardColumns"]
-    BP -->|C| Cards["BoardCards"]
-    BP --> Mock["data/mockBoard.js<br/>buildMockBoard()"]
-    Mock -.surrounding.-> Grid
-    Grid --> Parts["BoardParts<br/>StatusBadge, PersonLabel, WeekHeading"]
-    Cols --> Parts
-    Cards --> Parts
-    Parts --> Avatar["ResidentAvatar"]
-    Board["style/Board.css"] -.estiliza.-> BP
+    subgraph Frontend
+        App["App.js<br/>refreshTasks()"] --> Home["Home.js"]
+        Home --> WB["WeeklyBoard"]
+        WB --> Build["data/board.js<br/>buildBoard()"]
+        WB --> Grid["BoardGrid<br/>carrossel"]
+    end
+    App -->|GET /tasks/board| TC["TaskController"]
+    TC --> Rot["TaskRotationService<br/>rotateCurrentWeek()"]
+    TC --> BS["WeeklyBoardService<br/>getBoard()"]
+    BS -->|semana anterior| Hist[("task_rotation_history<br/>is_completed")]
+    BS -->|semana atual| Tasks[("tasks")]
+    BS -->|próxima semana| Plan["planWeek()<br/>previsão, sem gravar"]
+    Rot -->|sealOutcome antes de zerar| Hist
+    Rot -->|assignForWeek| Tasks
+    Sched["WeeklyTaskRotationScheduler<br/>diário 00:10"] --> Rot
 ```
 
 ## Fluxo principal
 
-1. A `Home` renderiza o `BoardPrototype` e passa a lista de tarefas que já existia como `listView`.
-2. O quadro abre em "Lista atual", então o comportamento em produção não muda até alguém escolher um protótipo.
-3. Ao escolher A, B ou C, o `BoardPrototype` monta o quadro com `buildMockBoard()`: semanas de segunda a domingo (mesma definição de semana do backend) e 4 moradores com resultados de exemplo. A opção A usa só a semana anterior, a atual e a próxima (`surrounding`), mesmo na virada do mês; B e C usam as semanas do mês.
-4. A opção A é um carrossel: a semana atual fica em foco no centro, com moldura amarela animada, e as vizinhas ficam desfocadas atrás. Clicar numa vizinha (ou usar as setas do teclado, os botões ou os pontos) a traz para o foco e mostra a tarefa de cada pessoa sem desfoque. B e C mostram a semana atual destacada. Todas usam o `StatusBadge` para o estado (Concluída, Não feita, Pendente, Em breve).
-5. Um aviso informa que os dados são de exemplo.
+1. Ao abrir a Home, o `App` chama `GET /tasks/board` junto com as outras requisições. Enquanto não responde, o card mostra o esqueleto de carregamento.
+2. O `TaskController` garante que a semana atual foi rotacionada e pede o quadro ao `WeeklyBoardService`.
+3. O serviço monta três semanas: a anterior vem do histórico (`done`, `missed` ou `unknown` quando não há registro), a atual vem ao vivo de `tasks` (`done` ou `pending`) e a próxima é prevista por `planWeek()`, a mesma regra da rotação, sem gravar nada.
+4. No frontend, `buildBoard()` cruza as entradas com os moradores. Um morador pode ter várias tarefas na mesma semana, ou nenhuma ("Sem tarefa").
+5. Clicar numa semana desfocada, usar as setas ou os pontos traz essa semana para o foco.
+6. Após uma decisão "Fiz" ou "Ainda não fiz", o `App` atualiza o quadro.
 
-## Limitação conhecida e próximo passo
+## Como o resultado das semanas é guardado
 
-O backend zera `is_completed` e `decision_at` a cada rotação semanal, e `task_rotation_history` guarda só quem recebeu a tarefa. Depois de escolher a variante, será preciso gravar o desfecho de cada semana no histórico e expor um endpoint mensal.
+A rotação zera `is_completed` e `decision_at` em `tasks` a cada semana. Antes de zerar, `rotateCurrentWeek()` chama `sealOutcome()`, que grava o resultado na linha mais recente do `task_rotation_history` da tarefa, se ela ainda não tiver resultado. Só há esse ponto de escrita. Colunas nulas significam "sem registro", então semanas anteriores ao deploy aparecem como "Sem registro" e não como "Não feita".
+
+## Migração
+
+`V5__task_rotation_outcome.sql` adiciona `is_completed`, `decision_at` e `fine_applied` em `task_rotation_history`. O projeto não roda migrações sozinho: execute o SQL no Supabase **antes** do deploy do backend, senão a rotação e o quadro falham por falta das colunas.

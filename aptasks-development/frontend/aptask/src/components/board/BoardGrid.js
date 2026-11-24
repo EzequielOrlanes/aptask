@@ -45,10 +45,14 @@ function BoardGrid({ board }) {
                   {board.people.map(person => {
                     const cell = person.cells[week.index];
                     return (
-                      <li key={person.name}>
+                      <li key={person.id || person.name}>
                         <PersonLabel person={person} />
-                        <span className="board-cell-task">{cell.task}</span>
-                        <StatusBadge status={cell.status} />
+                        {cell.items.length ? cell.items.map(item => (
+                          <div className="board-item" key={`${item.task}-${item.status}`}>
+                            <span className="board-cell-task">{item.task}</span>
+                            <StatusBadge status={item.status} />
+                          </div>
+                        )) : <span className="board-empty">Sem tarefa</span>}
                       </li>
                     );
                   })}

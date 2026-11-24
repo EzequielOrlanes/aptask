@@ -14,6 +14,7 @@ import api from './axiosInstance';
 const unwrap = response => response.data?.data ?? response.data;
 
 export const getWeeklyTasks = async () => unwrap(await api.get('/tasks/weekly'));
+export const getWeeklyBoard = async () => unwrap(await api.get('/tasks/board'));
 export const getResidents = async () => unwrap(await api.get('/residents'));
 export const updateResidentPresence = async (residentId, isAtHome) =>
   unwrap(await api.patch(`/residents/${encodeURIComponent(residentId)}/presence`, { isAtHome }));

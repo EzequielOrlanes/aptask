@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Task from "./pages/Task.js";
 import Home from "./pages/Home.js";
 import Login from "./pages/Login.js";
-import { getWeeklyTasks, getResidents, getTrashStatus, updateResidentPresence, submitWeeklyDecision, createTask, updateTask, deleteTask, assignTrashResponsible, reportTrashHalf, reportTrashFull, reportTrashEmptied, getFines, createFine, markFinePaid, getAdminFines, deleteFine } from "./services/api";
+import { getWeeklyTasks, getWeeklyBoard, getResidents, getTrashStatus, updateResidentPresence, submitWeeklyDecision, createTask, updateTask, deleteTask, assignTrashResponsible, reportTrashHalf, reportTrashFull, reportTrashEmptied, getFines, createFine, markFinePaid, getAdminFines, deleteFine } from "./services/api";
 import { ADMIN_TOKEN_KEY, ADMIN_SESSION_EXPIRED_EVENT } from "./services/axiosInstance";
 // Tema calmo e claro, carregado por último para valer em todas as telas.
 import "./style/Calmo.css";
@@ -37,6 +37,7 @@ function App() {
   const [adminFines, setAdminFines] = useState([]);
   const [adminFinesReady, setAdminFinesReady] = useState(false);
   const [weeklyTasks, setWeeklyTasks] = useState([]);
+  const [weeklyBoard, setWeeklyBoard] = useState(null);
   const [residents, setResidents] = useState([]);
   const [pendingPresence, setPendingPresence] = useState(readPendingPresence);
   const [trashStatus, setTrashStatus] = useState(null);
@@ -44,13 +45,14 @@ function App() {
   const [finesReady, setFinesReady] = useState(false);
   // "Pronto" = já chegou ao menos uma resposta bem-sucedida do backend. Antes disso a tela
   // mostra o esqueleto de carregamento, nunca dados inventados.
-  const [ready, setReady] = useState({ tasks: false, residents: false, trash: false });
+  const [ready, setReady] = useState({ tasks: false, board: false, residents: false, trash: false });
   const [error, setError] = useState("");
 
   const refreshTasks = useCallback(async () => {
-    const results = await Promise.allSettled([getWeeklyTasks(), getResidents(), getTrashStatus()]);
-    const [tasksResult, residentsResult, trashResult] = results;
+    const results = await Promise.allSettled([getWeeklyTasks(), getResidents(), getTrashStatus(), getWeeklyBoard()]);
+    const [tasksResult, residentsResult, trashResult, boardResult] = results;
     if (tasksResult.status === "fulfilled") setWeeklyTasks(tasksResult.value);
+    if (boardResult.status === "fulfilled") setWeeklyBoard(boardResult.value);
     if (residentsResult.status === "fulfilled") setResidents(residentsResult.value.map(resident => {
       const pending = readPendingPresence()[resident.id];
       return pending ? { ...resident, isAtHome: pending.isAtHome, presenceSync: "pending" } : resident;
@@ -58,6 +60,7 @@ function App() {
     if (trashResult.status === "fulfilled") setTrashStatus(trashResult.value);
     setReady(current => ({
       tasks: current.tasks || tasksResult.status === "fulfilled",
+      board: current.board || boardResult.status === "fulfilled",
       residents: current.residents || residentsResult.status === "fulfilled",
       trash: current.trash || trashResult.status === "fulfilled",
     }));
@@ -75,7 +78,7 @@ function App() {
 
   useEffect(() => { refreshTasks(); }, [refreshTasks]);
   // Backend acordando ou fora do ar: tenta de novo sozinho até chegarem os dados.
-  const allReady = ready.tasks && ready.residents && ready.trash;
+  const allReady = ready.tasks && ready.board && ready.residents && ready.trash;
   useEffect(() => {
     if (allReady) return undefined;
     const timer = window.setTimeout(refreshTasks, 5000);
@@ -125,6 +128,8 @@ function App() {
   const submitDecision = async (taskId, done) => {
     const updated = await submitWeeklyDecision(taskId, done);
     setWeeklyTasks(items => items.map(item => item.id === updated.id ? updated : item));
+    // O quadro da Home mostra o estado da semana atual; atualiza sem bloquear a decisão.
+    getWeeklyBoard().then(setWeeklyBoard).catch(() => {});
   };
   const changePresence = isAtHome => {
     const resident = residents.find(item => item.name === loggedUser);
@@ -233,7 +238,7 @@ function App() {
   };
 
   const homeProps = {
-    loggedUser, setLoggedUser, tasks: currentTasks, residents, trashStatus, ready, isAdmin,
+    loggedUser, setLoggedUser, tasks: currentTasks, board: weeklyBoard, residents, trashStatus, ready, isAdmin,
     onSaveTask: saveTask, onDeleteTask: removeTask, onAdminLogout: leaveAdminSession,
     onAssignTrash: assignTrash, onReportTrashHalf: notifyTrashHalf, onReportTrashFull: notifyTrashFull, onReportTrashEmptied: notifyTrashEmptied,
     adminFines, adminFinesLoading: !adminFinesReady, onDeleteFine: removeFine,

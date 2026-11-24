@@ -9,6 +9,8 @@ import com.aptasks.dto.task.WeeklyTaskResponse
 import com.aptasks.dto.task.TaskRotationHistoryResponse
 import com.aptasks.model.Task
 import com.aptasks.service.TaskRotationService
+import com.aptasks.service.WeeklyBoardService
+import com.aptasks.dto.task.WeeklyBoardResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -18,8 +20,17 @@ import java.util.UUID
 @RequestMapping("/tasks")
 class TaskController(
     private val taskService: TaskService,
-    private val taskRotationService: TaskRotationService
+    private val taskRotationService: TaskRotationService,
+    private val weeklyBoardService: WeeklyBoardService
 ) {
+    @GetMapping("/board")
+    fun readWeeklyBoard(): ResponseEntity<ApiResponse<WeeklyBoardResponse>> {
+        // Também recupera a semana se o scheduler esteve suspenso.
+        taskRotationService.rotateCurrentWeek()
+        val board = weeklyBoardService.getBoard()
+        return ResponseEntity.ok(ApiResponse(success = true, message = "Quadro semanal carregado.", data = board))
+    }
+
     @GetMapping("/weekly")
     fun readWeeklyTasks(): ResponseEntity<ApiResponse<List<WeeklyTaskResponse>>> {
         // Também recupera a semana se o scheduler esteve suspenso.
