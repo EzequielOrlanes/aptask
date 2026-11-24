@@ -29,7 +29,7 @@ function BoardGrid({ board, onEditDeadline }) {
             <section
               key={week.index}
               className={`board-slide ${isActive ? "is-active" : ""} ${week.isCurrent ? "is-current-week" : ""}`}
-              data-offset={Math.max(-2, Math.min(2, offset))}
+              data-offset={Math.max(-3, Math.min(3, offset))}
               aria-label={`${week.label}, ${week.range}`}
               aria-current={isActive ? "true" : undefined}
               role={isActive ? undefined : "button"}
@@ -61,7 +61,7 @@ function BoardGrid({ board, onEditDeadline }) {
                             <span className="board-cell-task">{item.task}</span>
                             <StatusBadge status={item.status} />
                           </div>
-                        )) : <span className="board-empty">Sem tarefa</span>}
+                        )) : <span className="board-empty">{week.isPast ? "Sem registro" : "Sem tarefa"}</span>}
                       </li>
                     );
                   })}
