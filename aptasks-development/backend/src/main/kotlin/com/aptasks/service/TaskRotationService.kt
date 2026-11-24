@@ -99,6 +99,11 @@ class TaskRotationService(
      * Define quem fica com cada tarefa em [weekStart]. Não grava nada: serve tanto à rotação
      * quanto à previsão da próxima semana no quadro. [previousOwners] liga tarefa ao responsável
      * da semana anterior, para que ninguém repita a mesma tarefa duas semanas seguidas.
+     *
+     * O rodízio natural distribui as tarefas em círculo, então ninguém fica com mais de uma a mais
+     * que os outros. Quando uma tarefa repetiria o responsável anterior (por exemplo, depois de
+     * cadastrar ou remover uma tarefa), ela troca de responsável com outra tarefa, o que mantém a
+     * distribuição igual. Só se nenhuma troca resolver, a tarefa avança para o próximo morador.
      */
     fun planWeek(
         weekStart: LocalDate,
@@ -108,18 +113,33 @@ class TaskRotationService(
     ): List<Pair<Task, User>> {
         if (residents.isEmpty()) return emptyList()
         val weekIndex = ChronoUnit.WEEKS.between(rotationAnchor, weekStart)
-        return tasks.mapIndexed { taskIndex, task ->
-            var residentIndex = Math.floorMod(taskIndex.toLong() + weekIndex, residents.size.toLong()).toInt()
-            // Proteção: se a tarefa voltou para quem a teve na semana anterior, avança para o próximo morador.
-            if (residents.size > 1 && previousOwners[task.id] == residents[residentIndex].id) {
-                rotationLogger.warn {
-                    "Tarefa '${task.description}' repetiu o responsável ${residents[residentIndex].name} " +
-                        "na semana $weekStart; avançando para o próximo morador."
+        val owners = tasks.indices
+            .map { Math.floorMod(it.toLong() + weekIndex, residents.size.toLong()).toInt() }
+            .toMutableList()
+
+        fun repeats(taskIndex: Int, residentIndex: Int) =
+            previousOwners[tasks[taskIndex].id] == residents[residentIndex].id
+
+        if (residents.size > 1) {
+            for (i in tasks.indices) {
+                if (!repeats(i, owners[i])) continue
+                val swapWith = tasks.indices.firstOrNull { j ->
+                    j != i && owners[j] != owners[i] && !repeats(i, owners[j]) && !repeats(j, owners[i])
                 }
-                residentIndex = Math.floorMod(residentIndex + 1, residents.size)
+                if (swapWith != null) {
+                    val resident = owners[i]
+                    owners[i] = owners[swapWith]
+                    owners[swapWith] = resident
+                } else {
+                    rotationLogger.warn {
+                        "Tarefa '${tasks[i].description}' repetiu o responsável ${residents[owners[i]].name} " +
+                            "na semana $weekStart e nenhuma troca resolveu; avançando para o próximo morador."
+                    }
+                    owners[i] = Math.floorMod(owners[i] + 1, residents.size)
+                }
             }
-            task to residents[residentIndex]
         }
+        return tasks.mapIndexed { index, task -> task to residents[owners[index]] }
     }
 
     /** Coloca uma nova tarefa na semana atual sem mexer nas tarefas já concluídas. */

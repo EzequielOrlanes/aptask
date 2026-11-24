@@ -82,6 +82,27 @@ class TaskRotationServiceTest {
     }
 
     @Test
+    fun `keeps every resident with one task when two tasks would repeat their owners`() {
+        val residents = listOf(resident("Ana"), resident("Bia"), resident("Caio"), resident("Dani"))
+        val householdTasks = tasks(4)
+        val weekStart = LocalDate.parse("2026-10-12")
+        val weekIndex = ChronoUnit.WEEKS.between(ANCHOR, weekStart)
+        val natural = householdTasks.indices.map { residents[Math.floorMod(it + weekIndex, 4L).toInt()] }
+        // As duas primeiras tarefas teriam o mesmo responsável da semana anterior.
+        val previous = mapOf(
+            householdTasks[0].id to natural[0].id,
+            householdTasks[1].id to natural[1].id,
+            householdTasks[2].id to natural[0].id,
+            householdTasks[3].id to natural[1].id
+        )
+
+        val plan = service.planWeek(weekStart, householdTasks, residents, previous)
+
+        assertEquals(4, plan.map { it.second.id }.toSet().size)
+        plan.forEach { (task, owner) -> assertTrue(previous[task.id] != owner.id) }
+    }
+
+    @Test
     fun `plans a week without writing anything`() {
         val residents = listOf(resident("Ana"), resident("Bia"))
         val householdTasks = tasks(2)
