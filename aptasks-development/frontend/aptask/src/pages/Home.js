@@ -5,10 +5,10 @@ import ResidentAvatar from "../components/ResidentAvatar";
 import TrashBin, { FILL_LABELS, getFillLevel } from "../components/TrashBin";
 import AdminTaskPanel from "../components/AdminTaskPanel";
 import AdminFinesPanel from "../components/AdminFinesPanel";
+import Skeleton from "../components/Skeleton";
 import "../style/Home.css";
 
-function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStatus, loading, isAdmin, onSaveTask, onDeleteTask, onAdminLogout, onAssignTrash, onReportTrashHalf, onReportTrashFull, onReportTrashEmptied, adminFines = [], adminFinesLoading = false, onDeleteFine }) {
-  const displayedResidents = residents.length ? residents : residentsFallback;
+function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStatus, ready = {}, isAdmin, onSaveTask, onDeleteTask, onAdminLogout, onAssignTrash, onReportTrashHalf, onReportTrashFull, onReportTrashEmptied, adminFines = [], adminFinesLoading = false, onDeleteFine }) {
   const responsible = trashStatus?.responsible;
   const currentResidentId = residents.find(person => person.name === loggedUser)?.id;
   const isCurrentResponsible = Boolean(responsible?.id) && responsible.id === currentResidentId;
@@ -47,10 +47,10 @@ function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStat
       <section className="home-section residents-section">
         <div className="section-heading">
           <div><p className="eyebrow">QUEM MORA AQUI</p><h2>Escolha seu perfil</h2></div>
-          <span className="section-count">{displayedResidents.length.toString().padStart(2, "0")} moradores</span>
+          <span className="section-count">{ready.residents ? `${residents.length.toString().padStart(2, "0")} moradores` : "…"}</span>
         </div>
         <div className="resident-grid">
-          {displayedResidents.map((resident, index) => (
+          {!ready.residents ? <Skeleton variant="card" count={4} label="Carregando moradores…" /> : residents.map((resident, index) => (
             <Link
               key={resident.id || resident.name}
               to="/user"
@@ -71,13 +71,13 @@ function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStat
           <span className="glass-badge">↻ Rotação semanal</span>
         </div>
         <div className="task-list glass-panel">
-          {loading ? <p className="empty-state">Carregando tarefas…</p> : tasks.length ? tasks.map(item => (
+          {!ready.tasks ? <Skeleton variant="row" count={3} label="Carregando tarefas…" /> : tasks.length ? tasks.map(item => (
             <article className="task-row" key={item.id || `${item.userName}-${item.task}`}>
               <span className={`task-check ${item.status ? "is-done" : ""}`}>{item.status ? "✓" : ""}</span>
               <div className="task-row-copy"><strong>{item.task}</strong><small>Responsável: {item.userName}</small></div>
               <span className={`task-status ${item.status ? "done" : "pending"}`}>{item.status ? "Concluída" : "Pendente"}</span>
             </article>
-          )) : <p className="empty-state">As tarefas da semana aparecerão aqui quando a API estiver disponível.</p>}
+          )) : <p className="empty-state">Nenhuma tarefa cadastrada para esta semana.</p>}
         </div>
       </section>
 
@@ -86,13 +86,13 @@ function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStat
 
       <div className="home-bottom-grid">
         <section className="home-section compact-section">
-          <div className="section-heading"><div><p className="eyebrow">ACOMPANHAMENTO DO LIXO</p><h2>Coleta de lixo</h2></div><span className="trash-icon">⌁</span></div>
+          <div className="section-heading"><div><p className="eyebrow">ACOMPANHAMENTO DO LIXO</p><h2>Coleta de lixo</h2></div><span className="trash-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6 7l1 12.5h10L18 7M10 11v5M14 11v5" /></svg></span></div>
           <div className="glass-panel trash-panel">
             <p>Quem está com o lixo?</p>
-            {responsible && <div className="trash-responsible"><ResidentAvatar resident={responsible} /><strong>{responsible.name}</strong><span className="task-status done">Responsável</span></div>}
+            {ready.trash && responsible && <div className="trash-responsible"><ResidentAvatar resident={responsible} /><strong>{responsible.name}</strong><span className="task-status done">Responsável</span></div>}
             <label className="trash-assignment-label" htmlFor="trash-responsible">Marcar responsável</label>
             <div className="trash-controls">
-              <select id="trash-responsible" value={selectedResponsibleId} onChange={event => setSelectedResponsibleId(event.target.value)} disabled={!residents.length || trashAction !== ""}>
+              <select id="trash-responsible" value={selectedResponsibleId} onChange={event => setSelectedResponsibleId(event.target.value)} disabled={!ready.residents || !ready.trash || !residents.length || trashAction !== ""}>
                 <option value="">Escolha um morador</option>
                 {residents.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}
               </select>
@@ -101,12 +101,16 @@ function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStat
               </button>
             </div>
             <div className="trash-status-block">
-              <TrashBin level={fillLevel} />
-              <p className="trash-level-line">
-                Lixeira <strong>{FILL_LABELS[fillLevel].toLowerCase()}</strong>
-                {responsible?.name ? ` · responsável: ${responsible.name}` : " · sem responsável"}
-              </p>
-              {fillLevel !== "EMPTY" && (
+              {ready.trash ? (
+                <>
+                  <TrashBin level={fillLevel} />
+                  <p className="trash-level-line">
+                    Lixeira <strong>{FILL_LABELS[fillLevel].toLowerCase()}</strong>
+                    {responsible?.name ? ` · responsável: ${responsible.name}` : " · sem responsável"}
+                  </p>
+                </>
+              ) : <Skeleton variant="block" label="Carregando status do lixo…" />}
+              {ready.trash && fillLevel !== "EMPTY" && (
                 <small className="trash-hint">
                   {isCurrentResponsible
                     ? 'Você está responsável. Quando retirar o lixo, marque "Já foi esvaziado".'
@@ -115,13 +119,13 @@ function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStat
               )}
             </div>
             <div className="trash-controls trash-report-controls">
-              <button type="button" className="trash-half-button" disabled={!canReport || trashAction !== "" || fillLevel !== "EMPTY"} onClick={() => runTrashAction(() => onReportTrashHalf(), "half")}>
+              <button type="button" className="trash-half-button" disabled={!ready.trash || !canReport || trashAction !== "" || fillLevel !== "EMPTY"} onClick={() => runTrashAction(() => onReportTrashHalf(), "half")}>
                 {trashAction === "half" ? "Enviando aviso…" : "Avisar meio cheia"}
               </button>
-              <button type="button" className="trash-full-button" disabled={!canReport || trashAction !== "" || fillLevel === "FULL"} onClick={() => runTrashAction(() => onReportTrashFull(), "full")}>
+              <button type="button" className="trash-full-button" disabled={!ready.trash || !canReport || trashAction !== "" || fillLevel === "FULL"} onClick={() => runTrashAction(() => onReportTrashFull(), "full")}>
                 {trashAction === "full" ? "Enviando aviso…" : "Avisar cheia"}
               </button>
-              {fillLevel !== "EMPTY" && isCurrentResponsible && <button type="button" className="trash-empty-button" disabled={trashAction !== ""} onClick={() => runTrashAction(() => onReportTrashEmptied(), "empty")}>
+              {ready.trash && fillLevel !== "EMPTY" && isCurrentResponsible && <button type="button" className="trash-empty-button" disabled={trashAction !== ""} onClick={() => runTrashAction(() => onReportTrashEmptied(), "empty")}>
                 {trashAction === "empty" ? "Atualizando…" : "Já foi esvaziado"}
               </button>}
             </div>
@@ -134,12 +138,5 @@ function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStat
     </main>
   );
 }
-
-const residentsFallback = [
-  { name: "Ezequiel", nickname: "Eze", initials: "EZ" },
-  { name: "Gabriela", nickname: "Gabs", initials: "GA" },
-  { name: "Guilherme", nickname: "Gui", initials: "GU" },
-  { name: "Isabella", nickname: "Bella", initials: "IS" },
-];
 
 export default Home;

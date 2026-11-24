@@ -1,5 +1,6 @@
 package com.aptasks.scheduler
 
+import com.aptasks.service.KeepAliveService
 import com.aptasks.service.TaskRotationService
 import com.aptasks.service.TaskService
 import com.aptasks.service.WeeklyRotationResult
@@ -20,6 +21,16 @@ class SchedulerDelegationTest {
         OverdueTaskScheduler(taskService).evaluateOverdueTasks()
 
         verify(exactly = 1) { taskService.evaluateOverdueTasks(any()) }
+    }
+
+    @Test
+    fun `keep-alive scheduler asks KeepAliveService to ping`() {
+        val keepAlive = mockk<KeepAliveService>()
+        every { keepAlive.ping() } returns 200
+
+        KeepAliveScheduler(keepAlive).ping()
+
+        verify(exactly = 1) { keepAlive.ping() }
     }
 
     @Test
