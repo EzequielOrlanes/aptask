@@ -34,40 +34,52 @@ function App() {
   const [loggedUser, setLoggedUser] = useState("");
   const [adminToken, setAdminToken] = useState(readAdminToken);
   const [adminFines, setAdminFines] = useState([]);
-  const [adminFinesLoading, setAdminFinesLoading] = useState(false);
+  const [adminFinesReady, setAdminFinesReady] = useState(false);
   const [weeklyTasks, setWeeklyTasks] = useState([]);
   const [residents, setResidents] = useState([]);
   const [pendingPresence, setPendingPresence] = useState(readPendingPresence);
   const [trashStatus, setTrashStatus] = useState(null);
   const [fines, setFines] = useState([]);
-  const [finesLoading, setFinesLoading] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [finesReady, setFinesReady] = useState(false);
+  // "Pronto" = já chegou ao menos uma resposta bem-sucedida do backend. Antes disso a tela
+  // mostra o esqueleto de carregamento, nunca dados inventados.
+  const [ready, setReady] = useState({ tasks: false, residents: false, trash: false });
   const [error, setError] = useState("");
 
   const refreshTasks = useCallback(async () => {
-    setLoading(true);
-    try {
-      const results = await Promise.allSettled([getWeeklyTasks(), getResidents(), getTrashStatus()]);
-      const [tasksResult, residentsResult, trashResult] = results;
-      if (tasksResult.status === "fulfilled") setWeeklyTasks(tasksResult.value);
-      if (residentsResult.status === "fulfilled") setResidents(residentsResult.value.map(resident => {
-        const pending = readPendingPresence()[resident.id];
-        return pending ? { ...resident, isAtHome: pending.isAtHome, presenceSync: "pending" } : resident;
-      }));
-      if (trashResult.status === "fulfilled") setTrashStatus(trashResult.value);
-      const failed = results.some(result => result.status === "rejected");
-      setError(failed ? "Algumas informações não carregaram. Confira a conexão com o backend." : "");
-    } finally {
-      setLoading(false);
-    }
+    const results = await Promise.allSettled([getWeeklyTasks(), getResidents(), getTrashStatus()]);
+    const [tasksResult, residentsResult, trashResult] = results;
+    if (tasksResult.status === "fulfilled") setWeeklyTasks(tasksResult.value);
+    if (residentsResult.status === "fulfilled") setResidents(residentsResult.value.map(resident => {
+      const pending = readPendingPresence()[resident.id];
+      return pending ? { ...resident, isAtHome: pending.isAtHome, presenceSync: "pending" } : resident;
+    }));
+    if (trashResult.status === "fulfilled") setTrashStatus(trashResult.value);
+    setReady(current => ({
+      tasks: current.tasks || tasksResult.status === "fulfilled",
+      residents: current.residents || residentsResult.status === "fulfilled",
+      trash: current.trash || trashResult.status === "fulfilled",
+    }));
+    const failed = results.some(result => result.status === "rejected");
+    setError(failed ? "Algumas informações não carregaram. Confira a conexão com o backend." : "");
   }, []);
 
   const refreshTrashStatus = useCallback(async () => {
-    try { setTrashStatus(await getTrashStatus()); }
+    try {
+      setTrashStatus(await getTrashStatus());
+      setReady(current => current.trash ? current : { ...current, trash: true });
+    }
     catch { setError("Não foi possível atualizar o status do lixo."); }
   }, []);
 
   useEffect(() => { refreshTasks(); }, [refreshTasks]);
+  // Backend acordando ou fora do ar: tenta de novo sozinho até chegarem os dados.
+  const allReady = ready.tasks && ready.residents && ready.trash;
+  useEffect(() => {
+    if (allReady) return undefined;
+    const timer = window.setTimeout(refreshTasks, 5000);
+    return () => window.clearTimeout(timer);
+  }, [allReady, ready, refreshTasks]);
   useEffect(() => {
     const interval = window.setInterval(refreshTrashStatus, 30000);
     return () => window.clearInterval(interval);
@@ -77,13 +89,16 @@ function App() {
   const currentResident = residents.find(item => item.name === loggedUser);
   const fineResidentId = currentResident?.id;
   const refreshFines = useCallback(async residentId => {
-    if (!residentId) { setFines([]); return; }
-    setFinesLoading(true);
-    try { setFines(await getFines(residentId)); }
+    if (!residentId) { setFines([]); setFinesReady(false); return; }
+    try { setFines(await getFines(residentId)); setFinesReady(true); }
     catch { setError("Não foi possível carregar as multas. Confira a conexão com o backend."); }
-    finally { setFinesLoading(false); }
   }, []);
-  useEffect(() => { refreshFines(fineResidentId); }, [fineResidentId, refreshFines]);
+  useEffect(() => {
+    // Ao trocar de morador, as multas do anterior deixam de valer.
+    setFines([]);
+    setFinesReady(false);
+    refreshFines(fineResidentId);
+  }, [fineResidentId, refreshFines]);
   useEffect(() => {
     if (!fineResidentId) return undefined;
     const interval = window.setInterval(() => refreshFines(fineResidentId), 30000);
@@ -182,6 +197,7 @@ function App() {
     try { window.localStorage.removeItem(ADMIN_TOKEN_KEY); } catch { /* ignore */ }
     setAdminToken(null);
     setAdminFines([]);
+    setAdminFinesReady(false);
   }, []);
   const isAdmin = Boolean(adminToken);
 
@@ -191,10 +207,8 @@ function App() {
   }, [leaveAdminSession]);
 
   const refreshAdminFines = useCallback(async () => {
-    setAdminFinesLoading(true);
-    try { setAdminFines(await getAdminFines()); }
+    try { setAdminFines(await getAdminFines()); setAdminFinesReady(true); }
     catch { setError("Não foi possível carregar as multas para o administrador."); }
-    finally { setAdminFinesLoading(false); }
   }, []);
   useEffect(() => {
     if (!isAdmin) return undefined;
@@ -218,10 +232,10 @@ function App() {
   };
 
   const homeProps = {
-    loggedUser, setLoggedUser, tasks: currentTasks, residents, trashStatus, loading, isAdmin,
+    loggedUser, setLoggedUser, tasks: currentTasks, residents, trashStatus, ready, isAdmin,
     onSaveTask: saveTask, onDeleteTask: removeTask, onAdminLogout: leaveAdminSession,
     onAssignTrash: assignTrash, onReportTrashHalf: notifyTrashHalf, onReportTrashFull: notifyTrashFull, onReportTrashEmptied: notifyTrashEmptied,
-    adminFines, adminFinesLoading, onDeleteFine: removeFine,
+    adminFines, adminFinesLoading: !adminFinesReady, onDeleteFine: removeFine,
   };
 
   return (
@@ -230,7 +244,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home {...homeProps} />} />
         <Route path="/login" element={<Login onAuthenticated={acceptAdminToken} />} />
-        <Route path="/user" element={loggedUser ? <Task loggedUser={loggedUser} resident={currentResident} tasks={residentTasks} trashStatus={trashStatus} loading={loading} onDecision={submitDecision} onPresenceChange={changePresence} fines={fines} finesLoading={finesLoading} residents={residents} onApplyFine={applyManualFine} onMarkFinePaid={payFine} /> : <Navigate to="/" />} />
+        <Route path="/user" element={loggedUser ? <Task loggedUser={loggedUser} resident={currentResident} tasks={residentTasks} trashStatus={trashStatus} ready={ready} onDecision={submitDecision} onPresenceChange={changePresence} fines={fines} finesLoading={!finesReady} residents={residents} onApplyFine={applyManualFine} onMarkFinePaid={payFine} /> : <Navigate to="/" />} />
         <Route path="/home" element={<Home {...homeProps} />} />
       </Routes>
     </Router>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Skeleton from "./Skeleton";
 
 const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const dateFormat = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short" });
@@ -39,7 +40,7 @@ function AdminFinesPanel({ fines = [], loading = false, onDelete }) {
 
       <div className="admin-task-list">
         <div className="admin-list-title"><strong>Multas registradas</strong><span>{fines.length}</span></div>
-        {loading && !fines.length ? <p className="admin-empty">Carregando multas…</p> : fines.length ? fines.map(fine => (
+        {loading ? <Skeleton variant="row" count={2} label="Carregando multas…" /> : fines.length ? fines.map(fine => (
           <article className="admin-task-row" key={fine.id}>
             <div className="admin-task-copy">
               <strong>{fine.receiverName} · {currency.format(Number(fine.amount))}</strong>

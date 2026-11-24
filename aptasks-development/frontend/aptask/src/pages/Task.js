@@ -3,10 +3,11 @@ import { Link } from "react-router-dom";
 import Img from "../imagem/ap103.png";
 import ResidentAvatar from "../components/ResidentAvatar";
 import FinesPanel from "../components/FinesPanel";
+import Skeleton from "../components/Skeleton";
 import { FILL_LABELS, getFillLevel } from "../components/TrashBin";
 import "../style/Task.css";
 
-function Task({ loggedUser, resident, tasks = [], trashStatus, loading, onDecision, onPresenceChange, fines = [], finesLoading = false, residents = [], onApplyFine, onMarkFinePaid }) {
+function Task({ loggedUser, resident, tasks = [], trashStatus, ready = {}, onDecision, onPresenceChange, fines = [], finesLoading = false, residents = [], onApplyFine, onMarkFinePaid }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const recordDecision = async done => {
@@ -38,14 +39,14 @@ function Task({ loggedUser, resident, tasks = [], trashStatus, loading, onDecisi
             <span className="presence-switch" />{resident?.isAtHome ? "Estou em casa" : resident?.id ? "Estou fora" : "Conectando…"}
           </button>
         </section>
-        {getFillLevel(trashStatus) !== "EMPTY" && trashStatus?.responsible?.id === resident?.id && (
+        {ready.trash && getFillLevel(trashStatus) !== "EMPTY" && trashStatus?.responsible?.id === resident?.id && (
           <aside className="trash-resident-nudge" role="status">
             <strong>Cutucada da casa: a lixeira está {FILL_LABELS[getFillLevel(trashStatus)].toLowerCase()}.</strong>
             <span>Você está marcado como responsável. Quando retirar o lixo, marque “Já foi esvaziado” na tela inicial.</span>
           </aside>
         )}
         <h2>Suas tarefas desta semana</h2>
-        {loading ? <p>Carregando tarefas…</p> : tasks.length ? tasks.map(task => (
+        {!ready.tasks ? <Skeleton variant="row" count={2} label="Carregando tarefas…" /> : tasks.length ? tasks.map(task => (
           <article className="weekly-resident-task" key={task.id}>
             <div className="tarefa-morador"><p>{task.description}</p></div>
             {task.deadline && <p className="task-deadline"><span>Prazo</span><strong>{new Date(task.deadline).toLocaleString("pt-BR", { dateStyle: "medium", timeStyle: "short" })}</strong></p>}

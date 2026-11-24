@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Skeleton from "./Skeleton";
 
 const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const dateFormat = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short" });
@@ -113,7 +114,7 @@ function FinesPanel({ fines = [], residents = [], currentResident, loading = fal
         {!canApply && <small className="fine-hint">Escolha seu perfil para aplicar multas.</small>}
       </form>
 
-      {loading ? <p className="empty-state">Carregando multas…</p> : (
+      {loading ? <Skeleton variant="row" count={2} label="Carregando multas…" /> : (
         <>
           <h3>Recebidas</h3>
           {received.length ? <ul className="fine-list">{received.map(fine => <FineItem key={fine.id} fine={fine} busy={payingId === fine.id} onMarkPaid={markPaid} />)}</ul> : <p className="empty-state">Nenhuma multa recebida.</p>}
