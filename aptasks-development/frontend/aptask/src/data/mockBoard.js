@@ -31,6 +31,17 @@ function formatDay(date) {
   return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function makeWeek(monday, index, currentMonday, label = `Semana ${index + 1}`) {
+  const sunday = new Date(monday.getTime() + 6 * DAY_MS);
+  return {
+    index,
+    label,
+    range: `${formatDay(monday)} – ${formatDay(sunday)}`,
+    isCurrent: monday.getTime() === currentMonday,
+    isPast: monday.getTime() < currentMonday,
+  };
+}
+
 // Semanas (segunda a domingo) que tocam o mês de `today`.
 export function getMonthWeeks(today = new Date()) {
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -38,16 +49,16 @@ export function getMonthWeeks(today = new Date()) {
   const currentMonday = mondayOf(today).getTime();
   const weeks = [];
   for (let monday = mondayOf(monthStart); monday <= monthEnd; monday = new Date(monday.getTime() + 7 * DAY_MS)) {
-    const sunday = new Date(monday.getTime() + 6 * DAY_MS);
-    weeks.push({
-      index: weeks.length,
-      label: `Semana ${weeks.length + 1}`,
-      range: `${formatDay(monday)} – ${formatDay(sunday)}`,
-      isCurrent: monday.getTime() === currentMonday,
-      isPast: monday.getTime() < currentMonday,
-    });
+    weeks.push(makeWeek(monday, weeks.length, currentMonday));
   }
   return weeks;
+}
+
+// Semana anterior, atual e próxima, mesmo que cruzem o limite do mês.
+export function getSurroundingWeeks(today = new Date()) {
+  const currentMonday = mondayOf(today);
+  const labels = ["Semana anterior", "Esta semana", "Próxima semana"];
+  return [-1, 0, 1].map((offset, index) => makeWeek(new Date(currentMonday.getTime() + offset * 7 * DAY_MS), index, currentMonday.getTime(), labels[index]));
 }
 
 function statusFor(personIndex, week) {
@@ -57,8 +68,9 @@ function statusFor(personIndex, week) {
 }
 
 // { weeks, people: [{ name, cells: [{ week, task, status }] }] }
-export function buildMockBoard(today = new Date()) {
-  const weeks = getMonthWeeks(today);
+// Com `surrounding`, usa só a semana anterior, a atual e a próxima.
+export function buildMockBoard(today = new Date(), { surrounding = false } = {}) {
+  const weeks = surrounding ? getSurroundingWeeks(today) : getMonthWeeks(today);
   const people = MOCK_RESIDENTS.map((resident, personIndex) => ({
     ...resident,
     cells: weeks.map(week => ({

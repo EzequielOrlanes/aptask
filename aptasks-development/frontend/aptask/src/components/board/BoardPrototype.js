@@ -16,6 +16,7 @@ const VIEWS = [
 function BoardPrototype({ listView, today }) {
   const [view, setView] = useState("list");
   const board = useMemo(() => buildMockBoard(today), [today]);
+  const gridBoard = useMemo(() => buildMockBoard(today, { surrounding: true }), [today]);
 
   return (
     <>
@@ -28,7 +29,7 @@ function BoardPrototype({ listView, today }) {
       </div>
       {view !== "list" && <p className="board-notice">Protótipo com dados de exemplo, não são as tarefas reais da casa.</p>}
       {view === "list" && listView}
-      {view === "grid" && <BoardGrid board={board} />}
+      {view === "grid" && <BoardGrid board={gridBoard} />}
       {view === "columns" && <BoardColumns board={board} />}
       {view === "cards" && <BoardCards board={board} />}
     </>
