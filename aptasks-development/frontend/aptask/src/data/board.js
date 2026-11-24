@@ -11,9 +11,11 @@ export const STATUS_LABELS = {
 export const STATUS_MARKS = { done: "✓", missed: "✗", pending: "…", upcoming: "·", unknown: "?" };
 
 const POSITION_LABELS = {
+  previous2: "2 semanas atrás",
   previous: "Semana anterior",
   current: "Esta semana",
   next: "Próxima semana",
+  next2: "Daqui a 2 semanas",
 };
 
 // "2026-10-12" -> "12/10"
@@ -43,7 +45,7 @@ export function buildBoard(weeklyBoard, residents = []) {
     deadline: week.position === "current" ? weeklyBoard.extendedUntil || null : null,
     range: `${formatDay(week.weekStart)} – ${formatDay(week.weekEnd)}`,
     isCurrent: week.position === "current",
-    isPast: week.position === "previous",
+    isPast: week.position === "previous" || week.position === "previous2",
     entries: week.entries || [],
   }));
 

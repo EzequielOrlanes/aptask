@@ -5,7 +5,7 @@ import java.time.LocalDate
 import java.util.UUID
 
 /**
- * Quadro semanal: semana anterior, atual e próxima, nessa ordem. [extendedUntil] vem preenchido
+ * Quadro semanal: duas semanas anteriores, a atual e duas próximas, nessa ordem. [extendedUntil] vem preenchido
  * quando o prazo da semana atual foi prorrogado e a rotação está adiada.
  */
 data class WeeklyBoardResponse(val weeks: List<BoardWeekResponse>, val extendedUntil: Instant? = null)
@@ -13,7 +13,7 @@ data class WeeklyBoardResponse(val weeks: List<BoardWeekResponse>, val extendedU
 data class BoardWeekResponse(
     val weekStart: LocalDate,
     val weekEnd: LocalDate,
-    /** "previous", "current" ou "next". */
+    /** "previous2", "previous", "current", "next" ou "next2". */
     val position: String,
     val entries: List<BoardEntryResponse>
 )

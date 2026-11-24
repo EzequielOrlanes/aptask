@@ -1,6 +1,6 @@
 # Quadro semanal (carrossel)
 
-O quadro de tarefas da Home é um carrossel com a semana anterior, a atual e a próxima. A semana atual fica em foco no centro; as vizinhas ficam desfocadas atrás e, ao clicar, vêm para o foco e mostram cada tarefa de cada morador com o resultado. Os dados vêm do backend.
+O quadro de tarefas da Home é um carrossel com cinco semanas: duas anteriores, a atual e duas próximas. A semana atual fica em foco no centro; as vizinhas ficam desfocadas atrás e, ao clicar, vêm para o foco e mostram cada tarefa de cada morador com o resultado. Os dados vêm do backend.
 
 ```mermaid
 flowchart LR
@@ -13,9 +13,9 @@ flowchart LR
     App -->|GET /tasks/board| TC["TaskController"]
     TC --> Rot["TaskRotationService<br/>rotateCurrentWeek()"]
     TC --> BS["WeeklyBoardService<br/>getBoard()"]
-    BS -->|semana anterior| Hist[("task_rotation_history<br/>is_completed")]
+    BS -->|duas semanas anteriores| Hist[("task_rotation_history<br/>is_completed")]
     BS -->|semana atual| Tasks[("tasks")]
-    BS -->|próxima semana| Plan["planWeek()<br/>previsão, sem gravar"]
+    BS -->|duas próximas semanas| Plan["planWeek()<br/>previsão, sem gravar"]
     Rot -->|sealOutcome antes de zerar| Hist
     Rot -->|assignForWeek| Tasks
     Sched["WeeklyTaskRotationScheduler<br/>diário 00:10"] --> Rot
@@ -25,7 +25,7 @@ flowchart LR
 
 1. Ao abrir a Home, o `App` chama `GET /tasks/board` junto com as outras requisições. Enquanto não responde, o card mostra o esqueleto de carregamento.
 2. O `TaskController` garante que a semana atual foi rotacionada e pede o quadro ao `WeeklyBoardService`.
-3. O serviço monta três semanas: a anterior vem do histórico (`done`, `missed` ou `unknown` quando não há registro), a atual vem ao vivo de `tasks` (`done` ou `pending`) e a próxima é prevista por `planWeek()`, a mesma regra da rotação, sem gravar nada.
+3. O serviço monta cinco semanas. As duas anteriores vêm do histórico (`done`, `missed` ou `unknown` quando não há registro), a atual vem ao vivo de `tasks` (`done` ou `pending`) e as duas próximas são previstas por `planWeek()`, a mesma regra da rotação, sem gravar nada. A segunda semana prevista usa os responsáveis da primeira para ninguém repetir a tarefa.
 4. No frontend, `buildBoard()` cruza as entradas com os moradores. Um morador pode ter várias tarefas na mesma semana, ou nenhuma ("Sem tarefa").
 5. Clicar numa semana desfocada, usar as setas ou os pontos traz essa semana para o foco.
 6. Após uma decisão "Fiz" ou "Ainda não fiz", o `App` atualiza o quadro.

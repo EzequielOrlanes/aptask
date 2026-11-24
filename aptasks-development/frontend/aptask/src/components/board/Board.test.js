@@ -227,3 +227,59 @@ describe("quando as semanas mudam", () => {
     expect(screen.getByRole("button", { name: /Semana anterior, / })).not.toHaveTextContent("Prazo até");
   });
 });
+
+describe("cinco semanas", () => {
+  const five = {
+    weeks: [
+      { weekStart: "2026-09-28", weekEnd: "2026-10-04", position: "previous2", entries: [
+        { userId: "ana", userName: "Ana", taskDescription: "Sala", status: "done" },
+      ] },
+      { weekStart: "2026-10-05", weekEnd: "2026-10-11", position: "previous", entries: [] },
+      { weekStart: "2026-10-12", weekEnd: "2026-10-18", position: "current", entries: [
+        { userId: "ana", userName: "Ana", taskDescription: "Louça", status: "pending" },
+      ] },
+      { weekStart: "2026-10-19", weekEnd: "2026-10-25", position: "next", entries: [] },
+      { weekStart: "2026-10-26", weekEnd: "2026-11-01", position: "next2", entries: [
+        { userId: "bia", userName: "Bia", taskDescription: "Lixo", status: "upcoming" },
+      ] },
+    ],
+  };
+  const renderFive = () => render(<WeeklyBoard board={five} residents={[ANA, BIA]} ready />);
+
+  it("mostra duas semanas de cada lado da atual, com a atual em foco", () => {
+    renderFive();
+    expect(screen.getByRole("region", { name: /Esta semana/ })).toHaveAttribute("data-offset", "0");
+    expect(screen.getByRole("button", { name: /Semana anterior, / })).toHaveAttribute("data-offset", "-1");
+    expect(screen.getByRole("button", { name: /2 semanas atrás, / })).toHaveAttribute("data-offset", "-2");
+    expect(screen.getByRole("button", { name: /Próxima semana, / })).toHaveAttribute("data-offset", "1");
+    expect(screen.getByRole("button", { name: /Daqui a 2 semanas, / })).toHaveAttribute("data-offset", "2");
+  });
+
+  it("traz para o foco uma semana a duas posições de distância", () => {
+    renderFive();
+    fireEvent.click(screen.getByRole("button", { name: /2 semanas atrás, / }));
+    const region = screen.getByRole("region", { name: /2 semanas atrás/ });
+    expect(region).toHaveAttribute("data-offset", "0");
+    expect(region).toHaveTextContent("Sala");
+    expect(region).toHaveTextContent("Concluída");
+  });
+
+  it("diz 'Sem registro' numa semana passada sem tarefas no histórico", () => {
+    renderFive();
+    fireEvent.click(screen.getByRole("button", { name: /Semana anterior, / }));
+    expect(screen.getByRole("region", { name: /Semana anterior/ })).toHaveTextContent("Sem registro");
+  });
+
+  it("esconde as semanas além de duas posições", () => {
+    renderFive();
+    fireEvent.click(screen.getByRole("button", { name: /2 semanas atrás, / }));
+    // Com a primeira semana em foco, a última fica a quatro posições e sai de cena.
+    expect(screen.getByRole("button", { name: /Daqui a 2 semanas, / })).toHaveAttribute("data-offset", "3");
+  });
+
+  it("só permite editar o prazo na semana anterior e na atual", () => {
+    render(<WeeklyBoard board={five} residents={[ANA, BIA]} ready canEdit onExtendWeek={jest.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /2 semanas atrás, / }));
+    expect(screen.queryByRole("button", { name: /Editar o prazo/ })).not.toBeInTheDocument();
+  });
+});
