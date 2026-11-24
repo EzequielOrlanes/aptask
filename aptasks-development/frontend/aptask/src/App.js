@@ -8,6 +8,7 @@ import { getWeeklyTasks, getResidents, getTrashStatus, updateResidentPresence, s
 import { ADMIN_TOKEN_KEY, ADMIN_SESSION_EXPIRED_EVENT } from "./services/axiosInstance";
 // Tema calmo e claro, carregado por último para valer em todas as telas.
 import "./style/Calmo.css";
+import "./style/Board.css";
 
 const PRESENCE_STORAGE_KEY = "ap103.pending-presence.v1";
 
