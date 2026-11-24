@@ -6,6 +6,7 @@ import TrashBin, { FILL_LABELS, getFillLevel } from "../components/TrashBin";
 import AdminTaskPanel from "../components/AdminTaskPanel";
 import AdminFinesPanel from "../components/AdminFinesPanel";
 import Skeleton from "../components/Skeleton";
+import BoardPrototype from "../components/board/BoardPrototype";
 import "../style/Home.css";
 
 function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStatus, ready = {}, isAdmin, onSaveTask, onDeleteTask, onAdminLogout, onAssignTrash, onReportTrashHalf, onReportTrashFull, onReportTrashEmptied, adminFines = [], adminFinesLoading = false, onDeleteFine }) {
@@ -70,15 +71,17 @@ function Home({ loggedUser, setLoggedUser, tasks = [], residents = [], trashStat
           <div><p className="eyebrow">SEMANA ATUAL</p><h2>Quadro de tarefas</h2></div>
           <span className="glass-badge">↻ Rotação semanal</span>
         </div>
-        <div className="task-list glass-panel">
-          {!ready.tasks ? <Skeleton variant="row" count={3} label="Carregando tarefas…" /> : tasks.length ? tasks.map(item => (
-            <article className="task-row" key={item.id || `${item.userName}-${item.task}`}>
-              <span className={`task-check ${item.status ? "is-done" : ""}`}>{item.status ? "✓" : ""}</span>
-              <div className="task-row-copy"><strong>{item.task}</strong><small>Responsável: {item.userName}</small></div>
-              <span className={`task-status ${item.status ? "done" : "pending"}`}>{item.status ? "Concluída" : "Pendente"}</span>
-            </article>
-          )) : <p className="empty-state">Nenhuma tarefa cadastrada para esta semana.</p>}
-        </div>
+        <BoardPrototype listView={
+          <div className="task-list glass-panel">
+            {!ready.tasks ? <Skeleton variant="row" count={3} label="Carregando tarefas…" /> : tasks.length ? tasks.map(item => (
+              <article className="task-row" key={item.id || `${item.userName}-${item.task}`}>
+                <span className={`task-check ${item.status ? "is-done" : ""}`}>{item.status ? "✓" : ""}</span>
+                <div className="task-row-copy"><strong>{item.task}</strong><small>Responsável: {item.userName}</small></div>
+                <span className={`task-status ${item.status ? "done" : "pending"}`}>{item.status ? "Concluída" : "Pendente"}</span>
+              </article>
+            )) : <p className="empty-state">Nenhuma tarefa cadastrada para esta semana.</p>}
+          </div>
+        } />
       </section>
 
       {isAdmin && <section className="home-section admin-section"><AdminTaskPanel tasks={tasks} residents={residents} onSave={onSaveTask} onDelete={onDeleteTask} /></section>}
