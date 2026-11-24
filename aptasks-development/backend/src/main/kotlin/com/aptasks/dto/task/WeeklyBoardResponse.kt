@@ -1,10 +1,14 @@
 package com.aptasks.dto.task
 
+import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
-/** Quadro semanal: semana anterior, atual e próxima, nessa ordem. */
-data class WeeklyBoardResponse(val weeks: List<BoardWeekResponse>)
+/**
+ * Quadro semanal: semana anterior, atual e próxima, nessa ordem. [extendedUntil] vem preenchido
+ * quando o prazo da semana atual foi prorrogado e a rotação está adiada.
+ */
+data class WeeklyBoardResponse(val weeks: List<BoardWeekResponse>, val extendedUntil: Instant? = null)
 
 data class BoardWeekResponse(
     val weekStart: LocalDate,

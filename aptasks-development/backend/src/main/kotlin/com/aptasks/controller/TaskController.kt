@@ -10,6 +10,9 @@ import com.aptasks.dto.task.TaskRotationHistoryResponse
 import com.aptasks.model.Task
 import com.aptasks.service.TaskRotationService
 import com.aptasks.service.WeeklyBoardService
+import com.aptasks.service.WeekExtensionService
+import com.aptasks.service.WeekExtensionResult
+import com.aptasks.dto.task.ExtendWeekRequest
 import com.aptasks.dto.task.WeeklyBoardResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -21,8 +24,19 @@ import java.util.UUID
 class TaskController(
     private val taskService: TaskService,
     private val taskRotationService: TaskRotationService,
-    private val weeklyBoardService: WeeklyBoardService
+    private val weeklyBoardService: WeeklyBoardService,
+    private val weekExtensionService: WeekExtensionService
 ) {
+    @PostMapping("/week/extend")
+    fun extendWeek(@RequestBody request: ExtendWeekRequest): ResponseEntity<ApiResponse<WeekExtensionResult>> {
+        val result = when (request.week) {
+            "current" -> weekExtensionService.extendCurrentWeek(request.until)
+            "previous" -> weekExtensionService.reopenPreviousWeek(request.until)
+            else -> throw IllegalArgumentException("Semana inválida: use \"current\" ou \"previous\".")
+        }
+        return ResponseEntity.ok(ApiResponse(success = true, message = "Prazo da semana prorrogado.", data = result))
+    }
+
     @GetMapping("/board")
     fun readWeeklyBoard(): ResponseEntity<ApiResponse<WeeklyBoardResponse>> {
         // Também recupera a semana se o scheduler esteve suspenso.

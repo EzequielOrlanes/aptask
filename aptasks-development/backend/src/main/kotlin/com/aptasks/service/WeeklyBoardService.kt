@@ -7,11 +7,8 @@ import com.aptasks.repository.TaskRepository
 import com.aptasks.repository.TaskRotationHistoryRepository
 import com.aptasks.repository.UserRepository
 import org.springframework.stereotype.Service
-import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
-import java.time.temporal.TemporalAdjusters
 import java.util.UUID
 
 /** Monta o quadro semanal: semana anterior (do histórico), atual (ao vivo) e próxima (prevista). */
@@ -22,10 +19,12 @@ class WeeklyBoardService(
     private val historyRepository: TaskRotationHistoryRepository,
     private val rotationService: TaskRotationService
 ) {
-    private val householdZone = ZoneId.of("America/Sao_Paulo")
-
     fun getBoard(now: Instant = Instant.now()): WeeklyBoardResponse {
-        val weekStart = now.atZone(householdZone).toLocalDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        // Com o prazo prorrogado, a semana antiga continua sendo a atual até a rotação acontecer.
+        val extension = rotationService.activeExtension(now)
+        val calendarStart = rotationService.calendarWeekStart(now)
+        val weekStart = extension?.weekStart ?: calendarStart
+        val nextStart = maxOf(weekStart.plusWeeks(1), calendarStart)
         val residents = userRepository.findAll()
         val residentsById = residents.associateBy { it.id }
         val tasks = taskRepository.findAll()
@@ -52,7 +51,7 @@ class WeeklyBoardService(
         }
 
         val previousOwners = currentOwners.associate { (task, owner) -> task.id to owner.id }
-        val next = rotationService.planWeek(weekStart.plusWeeks(1), tasks, residents, previousOwners).map { (task, owner) ->
+        val next = rotationService.planWeek(nextStart, tasks, residents, previousOwners).map { (task, owner) ->
             BoardEntryResponse(owner.id, owner.name, task.description, "upcoming")
         }
 
@@ -60,8 +59,9 @@ class WeeklyBoardService(
             listOf(
                 week(weekStart.minusWeeks(1), "previous", previous),
                 week(weekStart, "current", current),
-                week(weekStart.plusWeeks(1), "next", next)
-            )
+                week(nextStart, "next", next)
+            ),
+            extendedUntil = extension?.extendedUntil
         )
     }
 

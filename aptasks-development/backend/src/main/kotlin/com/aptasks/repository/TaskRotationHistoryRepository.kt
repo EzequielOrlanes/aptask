@@ -86,19 +86,25 @@ class TaskRotationHistoryRepository(private val jdbcTemplate: JdbcTemplate) {
     /** Tarefas e resultados de uma semana, para o quadro semanal. */
     fun findOutcomesByWeek(weekStart: LocalDate): List<TaskRotationOutcome> = jdbcTemplate.query(
         """
-        SELECT task_id, task_description, user_id, user_name, is_completed
+        SELECT task_id, task_description, user_id, user_name, is_completed, decision_at, fine_applied
         FROM task_rotation_history
         WHERE week_start = ?
         ORDER BY user_name, task_description
         """.trimIndent(),
         RowMapper { rs, _ ->
             val completed = rs.getBoolean("is_completed")
+            val completedOrNull = if (rs.wasNull()) null else completed
+            val decisionAt = rs.getTimestamp("decision_at")?.toInstant()
+            val fined = rs.getBoolean("fine_applied")
+            val finedOrNull = if (rs.wasNull()) null else fined
             TaskRotationOutcome(
                 taskId = rs.getObject("task_id", UUID::class.java),
                 taskDescription = rs.getString("task_description"),
                 userId = rs.getObject("user_id", UUID::class.java),
                 userName = rs.getString("user_name"),
-                isCompleted = if (rs.wasNull()) null else completed
+                isCompleted = completedOrNull,
+                decisionAt = decisionAt,
+                fineApplied = finedOrNull
             )
         },
         Date.valueOf(weekStart)
@@ -126,5 +132,18 @@ class TaskRotationHistoryRepository(private val jdbcTemplate: JdbcTemplate) {
             taskId,
             Date.valueOf(beforeWeek)
         )
+    }
+
+    /** Apaga o resultado da semana para que a próxima rotação o grave de novo. */
+    fun clearOutcomes(weekStart: LocalDate) {
+        jdbcTemplate.update(
+            "UPDATE task_rotation_history SET is_completed = NULL, decision_at = NULL, fine_applied = NULL WHERE week_start = ?",
+            Date.valueOf(weekStart)
+        )
+    }
+
+    /** Remove o histórico das semanas posteriores a [weekStart]. */
+    fun deleteWeeksAfter(weekStart: LocalDate) {
+        jdbcTemplate.update("DELETE FROM task_rotation_history WHERE week_start > ?", Date.valueOf(weekStart))
     }
 }

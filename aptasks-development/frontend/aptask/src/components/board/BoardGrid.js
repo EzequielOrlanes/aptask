@@ -3,7 +3,7 @@ import { PersonLabel, StatusBadge } from "./BoardParts";
 
 // Opção A: carrossel de semanas. A semana ativa fica em foco no centro e as
 // vizinhas ficam desfocadas atrás; clicar numa delas a traz para o centro.
-function BoardGrid({ board }) {
+function BoardGrid({ board, onEditDeadline }) {
   const initial = Math.max(0, board.weeks.findIndex(week => week.isCurrent));
   const [active, setActive] = useState(initial);
   const last = board.weeks.length - 1;
@@ -37,7 +37,11 @@ function BoardGrid({ board }) {
                 <header className="board-slide-head">
                   <span>
                     <strong>{week.label}</strong>
-                    <small>{week.range}</small>
+                    {onEditDeadline && isActive && (week.position === "previous" || week.position === "current") ? (
+                      <button type="button" className="board-date-edit" onClick={() => onEditDeadline(week)} aria-label={`Editar o prazo da ${week.label.toLowerCase()}, ${week.range}`}>
+                        {week.range} <span aria-hidden="true">✎</span>
+                      </button>
+                    ) : <small>{week.range}</small>}
                   </span>
                   {week.isCurrent && <em>Atual</em>}
                 </header>

@@ -22,11 +22,23 @@ function formatDay(isoDate) {
   return `${day}/${month}`;
 }
 
+// "2026-11-26T21:00:00Z" -> "26/11 18:00" (no fuso do navegador)
+export function formatDateTime(isoInstant) {
+  const date = new Date(isoInstant);
+  if (Number.isNaN(date.getTime())) return "";
+  const day = date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  const time = date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return `${day} ${time}`;
+}
+
 // { weeks, people: [{ ...morador, cells: [{ week, items: [{ task, status }] }] }] }
 export function buildBoard(weeklyBoard, residents = []) {
   const weeks = (weeklyBoard?.weeks || []).map((week, index) => ({
     index,
     label: POSITION_LABELS[week.position] || `Semana ${index + 1}`,
+    position: week.position,
+    weekStart: week.weekStart,
+    weekEnd: week.weekEnd,
     range: `${formatDay(week.weekStart)} – ${formatDay(week.weekEnd)}`,
     isCurrent: week.position === "current",
     isPast: week.position === "previous",

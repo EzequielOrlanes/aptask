@@ -1,14 +1,17 @@
 package com.aptasks.service
 
 import com.aptasks.model.Task
+import com.aptasks.model.TaskWeekExtension
 import com.aptasks.model.User
 import com.aptasks.repository.TaskRepository
 import com.aptasks.repository.TaskRotationHistoryRepository
 import com.aptasks.repository.TaskRotationRepository
+import com.aptasks.repository.TaskWeekExtensionRepository
 import com.aptasks.repository.UserRepository
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -33,10 +36,26 @@ class TaskRotationService(
     private val taskRepository: TaskRepository,
     private val userRepository: UserRepository,
     private val taskRotationRepository: TaskRotationRepository,
-    private val taskRotationHistoryRepository: TaskRotationHistoryRepository
+    private val taskRotationHistoryRepository: TaskRotationHistoryRepository,
+    private val weekExtensionRepository: TaskWeekExtensionRepository
 ) {
     private val householdZone = ZoneId.of("America/Sao_Paulo")
     private val rotationAnchor = LocalDate.of(1970, 1, 5) // segunda-feira
+
+    // Depois do novo prazo, o job horário ainda precisa avaliar as multas devidas antes da rotação zerar as tarefas.
+    private val extensionGrace = Duration.ofHours(1)
+
+    /** Prorrogação em vigor: o novo prazo ainda não passou (mais a folga do job de multas). */
+    fun activeExtension(now: Instant = Instant.now()): TaskWeekExtension? =
+        weekExtensionRepository.findActive(now.minus(extensionGrace))
+
+    /** Segunda-feira da semana do calendário. */
+    fun calendarWeekStart(now: Instant = Instant.now()): LocalDate =
+        now.atZone(householdZone).toLocalDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+
+    /** Semana em vigor: a do calendário, ou a prorrogada enquanto a rotação está adiada. */
+    fun currentWeekStart(now: Instant = Instant.now()): LocalDate =
+        activeExtension(now)?.weekStart ?: calendarWeekStart(now)
 
     /**
      * Distribui todas as tarefas cadastradas entre todos os moradores.
@@ -51,6 +70,11 @@ class TaskRotationService(
         val residents = userRepository.findAll()
 
         if (tasks.isEmpty() || residents.isEmpty()) {
+            return WeeklyRotationResult(weekStart, false, tasks.size, residents.size, emptyMap())
+        }
+
+        if (activeExtension(now) != null) {
+            rotationLogger.info { "Rotação de $weekStart adiada: o prazo da semana foi prorrogado." }
             return WeeklyRotationResult(weekStart, false, tasks.size, residents.size, emptyMap())
         }
 
@@ -145,8 +169,7 @@ class TaskRotationService(
     /** Coloca uma nova tarefa na semana atual sem mexer nas tarefas já concluídas. */
     @Transactional
     fun assignNewTaskForCurrentWeek(taskId: UUID, now: Instant = Instant.now()) {
-        val today = now.atZone(householdZone).toLocalDate()
-        val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val weekStart = currentWeekStart(now)
         if (!taskRotationRepository.hasRun(weekStart)) {
             rotateCurrentWeek(now)
             return
@@ -170,7 +193,7 @@ class TaskRotationService(
         val weekIndex = ChronoUnit.WEEKS.between(rotationAnchor, weekStart)
         val chosenIndex = Math.floorMod(weekIndex + newTaskIndex, leastLoadedResidents.size.toLong()).toInt()
         val responsible = leastLoadedResidents[chosenIndex]
-        val updated = taskRepository.assignForWeek(taskId, responsible.id, weekDeadline(weekStart))
+        val updated = taskRepository.assignForWeek(taskId, responsible.id, deadlineFor(weekStart, now))
         check(updated) { "A tarefa $taskId deixou de existir durante a atribuição semanal." }
         val task = tasks.first { it.id == taskId }
         taskRotationHistoryRepository.recordAssignment(
@@ -187,7 +210,12 @@ class TaskRotationService(
         if (userId == null) taskRotationHistoryRepository.findAll()
         else taskRotationHistoryRepository.findByUserId(userId)
 
-    private fun weekDeadline(weekStart: LocalDate): Instant =
+    /** Prazo da semana: o novo prazo, se ela foi prorrogada, ou o fim do domingo. */
+    private fun deadlineFor(weekStart: LocalDate, now: Instant): Instant =
+        activeExtension(now)?.takeIf { it.weekStart == weekStart }?.extendedUntil ?: weekDeadline(weekStart)
+
+    /** Fim do domingo da semana, no fuso da casa. */
+    fun weekDeadline(weekStart: LocalDate): Instant =
         weekStart.plusDays(7).atTime(LocalTime.MIDNIGHT).minusSeconds(1)
             .atZone(householdZone).toInstant()
 }
