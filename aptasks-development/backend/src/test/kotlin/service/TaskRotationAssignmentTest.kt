@@ -6,6 +6,8 @@ import com.aptasks.model.User
 import com.aptasks.repository.TaskRepository
 import com.aptasks.repository.TaskRotationHistoryRepository
 import com.aptasks.repository.TaskRotationRepository
+import com.aptasks.repository.TaskWeekExtensionRepository
+import com.aptasks.model.TaskWeekExtension
 import com.aptasks.repository.UserRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -28,7 +30,8 @@ class TaskRotationAssignmentTest {
     private val users = mockk<UserRepository>()
     private val rotationRuns = mockk<TaskRotationRepository>()
     private val history = mockk<TaskRotationHistoryRepository>(relaxed = true)
-    private val service = TaskRotationService(tasks, users, rotationRuns, history)
+    private val extensions = mockk<TaskWeekExtensionRepository>()
+    private val service = TaskRotationService(tasks, users, rotationRuns, history, extensions)
     private val now = Instant.parse("2026-10-14T12:00:00Z") // semana de 12/10/2026
     private val weekStart = LocalDate.of(2026, 10, 12)
     private val ana = resident("Ana")
@@ -36,6 +39,23 @@ class TaskRotationAssignmentTest {
 
     init {
         every { history.findByWeek(any()) } returns emptyList()
+        every { extensions.findActive(any()) } returns null
+    }
+
+    @Test
+    fun `new task created during an extension joins the extended week with the extended deadline`() {
+        val extension = TaskWeekExtension(LocalDate.of(2026, 10, 5), now.plusSeconds(7200))
+        val anaTask = task(ana.id.toString())
+        val newTask = task("")
+        every { extensions.findActive(any()) } returns extension
+        every { rotationRuns.hasRun(extension.weekStart) } returns true
+        every { tasks.findAll() } returns listOf(anaTask, newTask)
+        every { users.findAll() } returns listOf(ana, bia)
+        every { tasks.assignForWeek(any(), any(), any()) } returns true
+
+        service.assignNewTaskForCurrentWeek(newTask.id, now)
+
+        verify(exactly = 1) { tasks.assignForWeek(newTask.id, bia.id, extension.extendedUntil) }
     }
 
     @Test

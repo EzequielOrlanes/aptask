@@ -127,6 +127,35 @@ class TaskRepository(private val jdbcTemplate: JdbcTemplate) {
         )
     }
 
+    /** Devolve a tarefa ao estado em que estava numa semana reaberta, com o novo prazo. */
+    fun restoreForReopen(
+        taskId: UUID,
+        residentId: UUID,
+        dueAt: Instant,
+        isCompleted: Boolean,
+        decisionAt: Instant?,
+        fineAppliedAt: Instant?
+    ) {
+        jdbcTemplate.update(
+            """
+            UPDATE tasks
+            SET user_id = ?, due_at = ?, is_completed = ?, decision_at = ?, fine_applied_at = ?
+            WHERE id = ?
+            """.trimIndent(),
+            residentId.toString(),
+            Timestamp.from(dueAt),
+            isCompleted,
+            decisionAt?.let { Timestamp.from(it) },
+            fineAppliedAt?.let { Timestamp.from(it) },
+            taskId
+        )
+    }
+
+    /** Libera a tarefa para uma nova avaliação de multa, depois de a multa ser cancelada. */
+    fun clearFineApplied(taskId: UUID) {
+        jdbcTemplate.update("UPDATE tasks SET fine_applied_at = NULL WHERE id = ?", taskId)
+    }
+
     fun markFineApplied(taskId: UUID, appliedAt: Instant) {
         jdbcTemplate.update(
             "UPDATE tasks SET fine_applied_at = ? WHERE id = ? AND fine_applied_at IS NULL",

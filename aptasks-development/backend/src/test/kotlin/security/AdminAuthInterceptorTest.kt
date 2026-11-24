@@ -26,6 +26,7 @@ class AdminAuthInterceptorTest {
     fun `protected routes are blocked without a token`() {
         listOf(
             "POST" to "/tasks/create",
+            "POST" to "/tasks/week/extend",
             "PUT" to "/tasks/123",
             "DELETE" to "/tasks/123",
             "GET" to "/fines/admin",

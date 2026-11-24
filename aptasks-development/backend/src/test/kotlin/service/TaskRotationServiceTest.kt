@@ -6,6 +6,8 @@ import com.aptasks.model.User
 import com.aptasks.repository.TaskRepository
 import com.aptasks.repository.TaskRotationHistoryRepository
 import com.aptasks.repository.TaskRotationRepository
+import com.aptasks.repository.TaskWeekExtensionRepository
+import com.aptasks.model.TaskWeekExtension
 import com.aptasks.repository.UserRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -25,11 +27,13 @@ class TaskRotationServiceTest {
     private val users = mockk<UserRepository>()
     private val rotationRuns = mockk<TaskRotationRepository>()
     private val history = mockk<TaskRotationHistoryRepository>(relaxed = true)
-    private val service = TaskRotationService(tasks, users, rotationRuns, history)
+    private val extensions = mockk<TaskWeekExtensionRepository>()
+    private val service = TaskRotationService(tasks, users, rotationRuns, history, extensions)
     private val now = Instant.parse("2026-10-14T12:00:00Z")
 
     init {
         every { history.findByWeek(any()) } returns emptyList()
+        every { extensions.findActive(any()) } returns null
     }
 
     @Test
@@ -112,6 +116,39 @@ class TaskRotationServiceTest {
         assertEquals(householdTasks, plan.map { it.first })
         assertEquals(2, plan.map { it.second.id }.toSet().size)
         verify(exactly = 0) { tasks.assignForWeek(any(), any(), any()) }
+    }
+
+    @Test
+    fun `postpones the rotation while the week's deadline is extended`() {
+        val residents = listOf(resident("Ana"), resident("Bia"))
+        stubRotation(residents, tasks(2))
+        every { extensions.findActive(any()) } returns
+            TaskWeekExtension(LocalDate.parse("2026-10-05"), now.plusSeconds(5 * 3600))
+
+        val result = service.rotateCurrentWeek(now)
+
+        assertFalse(result.rotated)
+        verify(exactly = 0) { rotationRuns.registerWeekIfAbsent(any(), any()) }
+        verify(exactly = 0) { tasks.assignForWeek(any(), any(), any()) }
+    }
+
+    @Test
+    fun `keeps holding the rotation for one hour after the extended deadline`() {
+        stubRotation(listOf(resident("Ana"), resident("Bia")), tasks(2))
+
+        service.rotateCurrentWeek(now)
+
+        // O corte é uma hora antes de agora: um prazo que acabou há menos de uma hora ainda segura a rotação.
+        verify { extensions.findActive(now.minusSeconds(3600)) }
+    }
+
+    @Test
+    fun `rotates normally once the extension is over`() {
+        val residents = listOf(resident("Ana"), resident("Bia"))
+        stubRotation(residents, tasks(2))
+        every { extensions.findActive(any()) } returns null
+
+        assertTrue(service.rotateCurrentWeek(now).rotated)
     }
 
     @Test

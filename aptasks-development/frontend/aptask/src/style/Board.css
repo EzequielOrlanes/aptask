@@ -301,3 +301,138 @@
     height: 34px;
   }
 }
+
+.board-extension {
+  padding: 10px 14px;
+  border-radius: 14px;
+  color: var(--calm-ink);
+  background: rgba(247, 212, 106, 0.28);
+}
+
+.board-feedback {
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(60, 199, 182, 0.16);
+}
+
+/* Data da semana clicável para o administrador */
+.board-date-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border: 1px dashed rgba(45, 47, 51, 0.45);
+  border-radius: 8px;
+  color: var(--calm-ink);
+  background: rgba(255, 255, 255, 0.5);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.board-date-edit:hover,
+.board-date-edit:focus-visible {
+  background: #fff;
+  border-style: solid;
+  outline: none;
+}
+
+/* Popup do prazo */
+.board-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(45, 47, 51, 0.4);
+}
+
+.board-dialog {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 400px);
+  padding: 22px;
+  border-radius: var(--calm-radius);
+  background: var(--calm-surface);
+  box-shadow: 0 24px 60px rgba(45, 47, 51, 0.3);
+}
+
+.board-dialog h3 {
+  margin: 0;
+  font-family: "Fraunces", serif;
+  font-size: 20px;
+  color: var(--calm-ink);
+}
+
+.board-dialog-range {
+  margin: -6px 0 0;
+  color: var(--calm-muted);
+  font-size: 13px;
+}
+
+.board-dialog-field {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--calm-muted);
+}
+
+.board-dialog-field input {
+  padding: 10px 12px;
+  border: 1px solid var(--calm-line);
+  border-radius: 12px;
+  font: inherit;
+  color: var(--calm-ink);
+}
+
+.board-dialog-warning {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(247, 212, 106, 0.2);
+  font-size: 13px;
+}
+
+.board-dialog-error {
+  margin: 0;
+  color: #a8452f;
+  font-size: 13px;
+}
+
+.board-dialog-question {
+  margin: 0;
+}
+
+.board-dialog-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.board-dialog-actions button {
+  padding: 10px 18px;
+  border: 1px solid var(--calm-line);
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.board-dialog-save {
+  color: var(--calm-ink);
+  border-color: var(--calm-teal) !important;
+  background: rgba(60, 199, 182, 0.2);
+}
+
+.board-dialog-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 480px) {
+  .board-dialog-actions {
+    flex-direction: column-reverse;
+  }
+}

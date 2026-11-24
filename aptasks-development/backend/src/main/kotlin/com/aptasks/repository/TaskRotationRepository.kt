@@ -29,4 +29,20 @@ class TaskRotationRepository(private val jdbcTemplate: JdbcTemplate) {
             Date.valueOf(weekStart),
             Timestamp.from(executedAt)
         ) == 1
+
+    /** Semana mais recente já rotacionada, ou null se nenhuma rotação aconteceu. */
+    fun latestWeek(): LocalDate? =
+        jdbcTemplate.queryForObject("SELECT MAX(week_start) FROM task_rotation_runs", Date::class.java)?.toLocalDate()
+
+    /** Instante em que a semana foi rotacionada, ou null se ela não foi. */
+    fun executedAt(weekStart: LocalDate): Instant? = jdbcTemplate.query(
+        "SELECT executed_at FROM task_rotation_runs WHERE week_start = ?",
+        { rs, _ -> rs.getTimestamp("executed_at").toInstant() },
+        Date.valueOf(weekStart)
+    ).firstOrNull()
+
+    /** Esquece as rotações posteriores a [weekStart], para que aconteçam de novo. */
+    fun deleteWeeksAfter(weekStart: LocalDate) {
+        jdbcTemplate.update("DELETE FROM task_rotation_runs WHERE week_start > ?", Date.valueOf(weekStart))
+    }
 }

@@ -7,6 +7,7 @@ import org.springframework.jdbc.core.RowMapper
 import org.springframework.stereotype.Repository
 import java.sql.ResultSet
 import java.sql.Timestamp
+import java.time.LocalDateTime
 import java.util.UUID
 
 /** Persistência de multas com SQL declarado explicitamente. */
@@ -63,6 +64,25 @@ class FineRepository(private val jdbcTemplate: JdbcTemplate) {
     /** Remove a multa. Retorna false se ela não existe. */
     fun deleteById(id: UUID): Boolean =
         jdbcTemplate.update("DELETE FROM fine WHERE id = ?", id) > 0
+
+    /** Remove as multas ainda não pagas do morador criadas entre [from] e [to]. Retorna quantas foram removidas. */
+    fun deleteUnpaidBetween(receiver: UUID, from: LocalDateTime, to: LocalDateTime): Int =
+        jdbcTemplate.update(
+            "DELETE FROM fine WHERE receiver = ? AND is_paid = FALSE AND timestamp BETWEEN ? AND ?",
+            receiver,
+            Timestamp.valueOf(from),
+            Timestamp.valueOf(to)
+        )
+
+    /** Conta as multas já pagas do morador criadas entre [from] e [to]. */
+    fun countPaidBetween(receiver: UUID, from: LocalDateTime, to: LocalDateTime): Int =
+        jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM fine WHERE receiver = ? AND is_paid = TRUE AND timestamp BETWEEN ? AND ?",
+            Int::class.java,
+            receiver,
+            Timestamp.valueOf(from),
+            Timestamp.valueOf(to)
+        ) ?: 0
 
     /** Marca a multa como paga. Retorna false se a multa não existe. */
     fun markPaid(id: UUID): Boolean =

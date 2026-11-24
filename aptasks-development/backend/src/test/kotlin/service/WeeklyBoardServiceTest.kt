@@ -6,6 +6,8 @@ import com.aptasks.model.User
 import com.aptasks.repository.TaskRepository
 import com.aptasks.repository.TaskRotationHistoryRepository
 import com.aptasks.repository.UserRepository
+import com.aptasks.repository.TaskWeekExtensionRepository
+import com.aptasks.model.TaskWeekExtension
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -19,7 +21,8 @@ class WeeklyBoardServiceTest {
     private val tasks = mockk<TaskRepository>()
     private val users = mockk<UserRepository>()
     private val history = mockk<TaskRotationHistoryRepository>()
-    private val rotation = TaskRotationService(tasks, users, mockk(relaxed = true), history)
+    private val extensions = mockk<TaskWeekExtensionRepository>()
+    private val rotation = TaskRotationService(tasks, users, mockk(relaxed = true), history, extensions)
     private val service = WeeklyBoardService(tasks, users, history, rotation)
     // Quarta-feira; a semana começa na segunda 2026-10-12.
     private val now = Instant.parse("2026-10-14T12:00:00Z")
@@ -28,6 +31,7 @@ class WeeklyBoardServiceTest {
 
     init {
         every { users.findAll() } returns listOf(ana, bia)
+        every { extensions.findActive(any()) } returns null
     }
 
     @Test
@@ -93,5 +97,27 @@ class WeeklyBoardServiceTest {
         every { history.findOutcomesByWeek(any()) } returns emptyList()
 
         assertTrue(service.getBoard(now).weeks[1].entries.isEmpty())
+    }
+
+    @Test
+    fun `keeps the old week as current while its deadline is extended`() {
+        val until = now.plusSeconds(3 * 24 * 3600)
+        every { extensions.findActive(any()) } returns TaskWeekExtension(LocalDate.parse("2026-10-05"), until)
+        every { tasks.findAll() } returns emptyList()
+        every { history.findOutcomesByWeek(any()) } returns emptyList()
+
+        val board = service.getBoard(now)
+
+        assertEquals(listOf(LocalDate.parse("2026-09-28"), LocalDate.parse("2026-10-05"), LocalDate.parse("2026-10-12")), board.weeks.map { it.weekStart })
+        assertEquals("current", board.weeks[1].position)
+        assertEquals(until, board.extendedUntil)
+    }
+
+    @Test
+    fun `has no extension when the deadline was not extended`() {
+        every { tasks.findAll() } returns emptyList()
+        every { history.findOutcomesByWeek(any()) } returns emptyList()
+
+        assertEquals(null, service.getBoard(now).extendedUntil)
     }
 }

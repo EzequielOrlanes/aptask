@@ -32,3 +32,19 @@ test("com dados do backend mostra moradores e tarefas reais", () => {
   expect(screen.getByText("Lavar louça")).toBeInTheDocument();
   expect(screen.queryByText("Carregando moradores…")).not.toBeInTheDocument();
 });
+
+test("só o administrador pode editar o prazo da semana pela data do carrossel", () => {
+  const ready = { tasks: true, board: true, residents: true, trash: true };
+  const residents = [{ id: "1", name: "Ana" }];
+  const board = { weeks: [
+    { weekStart: "2026-10-05", weekEnd: "2026-10-11", position: "previous", entries: [] },
+    { weekStart: "2026-10-12", weekEnd: "2026-10-18", position: "current", entries: [] },
+    { weekStart: "2026-10-19", weekEnd: "2026-10-25", position: "next", entries: [] },
+  ] };
+  const { unmount } = renderHome({ ready, residents, board, isAdmin: false, onExtendWeek: jest.fn() });
+  expect(screen.queryByRole("button", { name: /Editar o prazo/ })).not.toBeInTheDocument();
+  unmount();
+
+  renderHome({ ready, residents, board, isAdmin: true, onExtendWeek: jest.fn(), onSaveTask: jest.fn(), onDeleteTask: jest.fn() });
+  expect(screen.getByRole("button", { name: /Editar o prazo da esta semana/ })).toBeInTheDocument();
+});

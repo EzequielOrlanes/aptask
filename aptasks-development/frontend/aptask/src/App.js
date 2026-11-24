@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Task from "./pages/Task.js";
 import Home from "./pages/Home.js";
 import Login from "./pages/Login.js";
-import { getWeeklyTasks, getWeeklyBoard, getResidents, getTrashStatus, updateResidentPresence, submitWeeklyDecision, createTask, updateTask, deleteTask, assignTrashResponsible, reportTrashHalf, reportTrashFull, reportTrashEmptied, getFines, createFine, markFinePaid, getAdminFines, deleteFine } from "./services/api";
+import { getWeeklyTasks, getWeeklyBoard, extendWeek, getResidents, getTrashStatus, updateResidentPresence, submitWeeklyDecision, createTask, updateTask, deleteTask, assignTrashResponsible, reportTrashHalf, reportTrashFull, reportTrashEmptied, getFines, createFine, markFinePaid, getAdminFines, deleteFine } from "./services/api";
 import { ADMIN_TOKEN_KEY, ADMIN_SESSION_EXPIRED_EVENT } from "./services/axiosInstance";
 // Tema calmo e claro, carregado por último para valer em todas as telas.
 import "./style/Calmo.css";
@@ -125,6 +125,11 @@ function App() {
     await markFinePaid(fineId);
     await refreshFines(fineResidentId);
   };
+  const prolongWeek = async (until, week) => {
+    const result = await extendWeek(until, week);
+    await refreshTasks();
+    return result;
+  };
   const submitDecision = async (taskId, done) => {
     const updated = await submitWeeklyDecision(taskId, done);
     setWeeklyTasks(items => items.map(item => item.id === updated.id ? updated : item));
@@ -239,7 +244,7 @@ function App() {
 
   const homeProps = {
     loggedUser, setLoggedUser, tasks: currentTasks, board: weeklyBoard, residents, trashStatus, ready, isAdmin,
-    onSaveTask: saveTask, onDeleteTask: removeTask, onAdminLogout: leaveAdminSession,
+    onSaveTask: saveTask, onDeleteTask: removeTask, onExtendWeek: prolongWeek, onAdminLogout: leaveAdminSession,
     onAssignTrash: assignTrash, onReportTrashHalf: notifyTrashHalf, onReportTrashFull: notifyTrashFull, onReportTrashEmptied: notifyTrashEmptied,
     adminFines, adminFinesLoading: !adminFinesReady, onDeleteFine: removeFine,
   };

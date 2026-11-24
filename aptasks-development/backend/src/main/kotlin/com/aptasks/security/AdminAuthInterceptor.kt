@@ -16,6 +16,7 @@ class AdminAuthInterceptor(private val adminAuth: AdminAuthService) : HandlerInt
         /** Método + padrão de caminho das rotas que só o administrador acessa. */
         val PROTECTED_ROUTES = listOf(
             "POST" to "/tasks/create",
+            "POST" to "/tasks/week/extend",
             "PUT" to "/tasks/*",
             "DELETE" to "/tasks/*",
             "GET" to "/fines/admin",

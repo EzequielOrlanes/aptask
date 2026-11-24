@@ -15,6 +15,9 @@ const unwrap = response => response.data?.data ?? response.data;
 
 export const getWeeklyTasks = async () => unwrap(await api.get('/tasks/weekly'));
 export const getWeeklyBoard = async () => unwrap(await api.get('/tasks/board'));
+// POST /tasks/week/extend -> muda o prazo da semana atual ('current') ou reabre a anterior ('previous')
+// e cancela as multas dela (rota administrativa)
+export const extendWeek = async (until, week = 'current') => unwrap(await api.post('/tasks/week/extend', { until, week }));
 export const getResidents = async () => unwrap(await api.get('/residents'));
 export const updateResidentPresence = async (residentId, isAtHome) =>
   unwrap(await api.patch(`/residents/${encodeURIComponent(residentId)}/presence`, { isAtHome }));

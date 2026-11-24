@@ -9,7 +9,7 @@ import Skeleton from "../components/Skeleton";
 import WeeklyBoard from "../components/board/WeeklyBoard";
 import "../style/Home.css";
 
-function Home({ loggedUser, setLoggedUser, tasks = [], board = null, residents = [], trashStatus, ready = {}, isAdmin, onSaveTask, onDeleteTask, onAdminLogout, onAssignTrash, onReportTrashHalf, onReportTrashFull, onReportTrashEmptied, adminFines = [], adminFinesLoading = false, onDeleteFine }) {
+function Home({ loggedUser, setLoggedUser, tasks = [], board = null, residents = [], trashStatus, ready = {}, isAdmin, onSaveTask, onDeleteTask, onExtendWeek, onAdminLogout, onAssignTrash, onReportTrashHalf, onReportTrashFull, onReportTrashEmptied, adminFines = [], adminFinesLoading = false, onDeleteFine }) {
   const responsible = trashStatus?.responsible;
   const currentResidentId = residents.find(person => person.name === loggedUser)?.id;
   const isCurrentResponsible = Boolean(responsible?.id) && responsible.id === currentResidentId;
@@ -71,7 +71,7 @@ function Home({ loggedUser, setLoggedUser, tasks = [], board = null, residents =
           <div><p className="eyebrow">SEMANA ATUAL</p><h2>Quadro de tarefas</h2></div>
           <span className="glass-badge">↻ Rotação semanal</span>
         </div>
-        <WeeklyBoard board={board} residents={residents} ready={Boolean(ready.board)} />
+        <WeeklyBoard board={board} residents={residents} ready={Boolean(ready.board)} canEdit={isAdmin} onExtendWeek={onExtendWeek} />
       </section>
 
       {isAdmin && <section className="home-section admin-section"><AdminTaskPanel tasks={tasks} residents={residents} onSave={onSaveTask} onDelete={onDeleteTask} /></section>}

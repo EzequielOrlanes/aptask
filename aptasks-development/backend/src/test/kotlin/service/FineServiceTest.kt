@@ -18,7 +18,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.UUID
 
 /** Testes unitários de FineService: validações, persistência, listagem e pagamento. */
@@ -202,6 +204,29 @@ class FineServiceTest {
         every { fines.deleteById(id) } returns false
 
         assertThrows<FineNotFoundException> { service.deleteFine(id) }
+    }
+
+    @Test
+    fun `cancels unpaid fines created at the task's fine instant and keeps paid ones`() {
+        val appliedAt = Instant.parse("2026-10-18T03:00:00Z")
+        val at = LocalDateTime.ofInstant(appliedAt, ZoneId.systemDefault())
+        every { fines.countPaidBetween(receiver.id, at.minusSeconds(2), at.plusSeconds(2)) } returns 1
+        every { fines.deleteUnpaidBetween(receiver.id, at.minusSeconds(2), at.plusSeconds(2)) } returns 2
+
+        val result = service.cancelAutomaticFines(receiver.id, appliedAt)
+
+        assertEquals(CancelledFines(cancelled = 2, keptPaid = 1), result)
+    }
+
+    @Test
+    fun `cancels unpaid fines of a resident inside a time window`() {
+        val from = Instant.parse("2026-10-12T02:59:59Z")
+        val to = Instant.parse("2026-10-12T03:10:00Z")
+        val zone = ZoneId.systemDefault()
+        every { fines.countPaidBetween(receiver.id, LocalDateTime.ofInstant(from, zone), LocalDateTime.ofInstant(to, zone)) } returns 0
+        every { fines.deleteUnpaidBetween(receiver.id, LocalDateTime.ofInstant(from, zone), LocalDateTime.ofInstant(to, zone)) } returns 3
+
+        assertEquals(CancelledFines(cancelled = 3, keptPaid = 0), service.cancelFinesBetween(receiver.id, from, to))
     }
 
     private fun request(

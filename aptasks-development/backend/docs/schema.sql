@@ -64,6 +64,13 @@ CREATE TABLE IF NOT EXISTS task_rotation_history (
 CREATE INDEX IF NOT EXISTS idx_task_rotation_history_user_week
     ON task_rotation_history (user_id, week_start DESC);
 
+-- Prorrogação do prazo de uma semana: enquanto o novo prazo não passa, a rotação espera.
+CREATE TABLE IF NOT EXISTS task_week_extensions (
+    week_start      DATE PRIMARY KEY,
+    extended_until  TIMESTAMPTZ NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL
+);
+
 -- Coleta de lixo: uma única linha com o estado atual.
 CREATE TABLE IF NOT EXISTS trash_status (
     id                   SMALLINT PRIMARY KEY CHECK (id = 1),
@@ -93,5 +100,6 @@ ALTER TABLE tasks                  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE fine                   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE task_rotation_runs     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE task_rotation_history  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE task_week_extensions   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trash_status           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trash_events           ENABLE ROW LEVEL SECURITY;

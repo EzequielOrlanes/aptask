@@ -10,7 +10,12 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.UUID
+
+data class CancelledFines(val cancelled: Int, val keptPaid: Int)
 
 @Service
 class FineService(
@@ -46,6 +51,26 @@ class FineService(
             isPaid = false
         )
         return fineRepository.insert(fine)
+    }
+
+    /**
+     * Cancela a multa automática de uma tarefa. A multa não guarda a tarefa de origem, mas é criada
+     * no mesmo instante em que a tarefa registra [appliedAt], então vale a janela de dois segundos.
+     * Multas já pagas ficam e são contadas em [CancelledFines.keptPaid].
+     */
+    @Transactional
+    fun cancelAutomaticFines(receiverId: UUID, appliedAt: Instant): CancelledFines =
+        cancelFinesBetween(receiverId, appliedAt.minusSeconds(2), appliedAt.plusSeconds(2))
+
+    /** Cancela as multas não pagas do morador criadas entre [from] e [to]; as pagas ficam. */
+    @Transactional
+    fun cancelFinesBetween(receiverId: UUID, from: Instant, to: Instant): CancelledFines {
+        val zone = ZoneId.systemDefault()
+        val start = LocalDateTime.ofInstant(from, zone)
+        val end = LocalDateTime.ofInstant(to, zone)
+        val keptPaid = fineRepository.countPaidBetween(receiverId, start, end)
+        val cancelled = fineRepository.deleteUnpaidBetween(receiverId, start, end)
+        return CancelledFines(cancelled, keptPaid)
     }
 
     /** Multas enviadas e recebidas pelo morador. */
